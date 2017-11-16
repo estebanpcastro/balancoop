@@ -71,36 +71,9 @@ Class Import_model extends CI_Model{
 
 		$asociado = [];
 
-// 		$asociado->id_TipodeIdentificacion = $asociado_value['Tipo_de_identificacion'];
-// 		$asociado->id_Asociado = $asociado_value['Numero_de_identificacion'];
-// 		$asociado->Identificacion = $asociado_value['Numero_de_identificacion'];
-// 		$asociado->PrimerApellido = $asociado_value['Primer_apellido'];
-// 		$asociado->SegundoApellido = $asociado_value['Segundo_apellido'];
-// 		$asociado->Nombre = $asociado_value['Nombres'];
-// 		$asociado->FechadeIngresoalaCooperativa = $asociado_value['Fecha_de_ingreso'];
-// 		$asociado->TelefonoCasa = $asociado_value['Telefono'];
-// 		$asociado->Direccion = $asociado_value['Direccion'];
-// 		$asociado->Id_tipo = $asociado_value['Asociado'];
-// 		$asociado->id_EstadoactualEntidad = $asociado_value['Activo'];
-// 		$asociado->Departamento_Cliente = $asociado_value['Codigo_municipio'];
-// 		$asociado->CorreoElectronico = $asociado_value['Email'];
-// 		$asociado->id_Genero_cliente = $asociado_value['Genero'];
-// 		$asociado->Estado_Empleado = $asociado_value['Empleado'];
-// 		$asociado->id_tipoempleado = $asociado_value['TipoContrato'];
-// 		$asociado->id_Escolaridad = $asociado_value['NivelEscolaridad'];
-// 		$asociado->Id_Estrato = $asociado_value['Estrato'];
-// 		$asociado->id_RangodeIngresomensual = $asociado_value['NivelIngresos'];
-// 		$asociado->FechaNacimiento = $asociado_value['FechaNacimiento'];
-// 		$asociado->id_EstadoCivil = $asociado_value['EstadoCivil'];
-// 		$asociado->id_CabezadeFamilia = $asociado_value['MujerCabezaFamilia'];
-// 		$asociado->id_Profesion = $asociado_value['Ocupacion'];
-// 		$asociado->id_Industria = $asociado_value['Sector_economico'];
-// 		$asociado->FechadeRetiro = $asociado_value['Fecha_de_retiro'];
-// 		$asociado->id_Empresa = $idEmpresa;
-		//   		$asociado_value['AsistioUltAsamblea'];
 		if (is_array($asociado_value) && $idEmpresa) {
 			$asociado['id_TipodeIdentificacion'] = $asociado_value['Tipo_de_identificacion'];
-			// 		$asociado->id_Asociado = $asociado_value['Numero_de_identificacion'];
+			$asociado['id_Asociado'] = $idEmpresa . '-' . $asociado_value['Numero_de_identificacion'];
 			$asociado['Identificacion'] = $asociado_value['Numero_de_identificacion'];
 			$asociado['PrimerApellido'] = $asociado_value['Primer_apellido'];
 			$asociado['SegundoApellido'] = $asociado_value['Segundo_apellido'];
@@ -124,13 +97,16 @@ Class Import_model extends CI_Model{
 			$asociado['id_Profesion'] = $asociado_value['Ocupacion'];
 			$asociado['id_Industria'] = $asociado_value['Sector_economico'];
 			$asociado['FechadeRetiro']= $asociado_value['Fecha_de_retiro'];
+			$anoIngreso = date('Y',strtotime($asociado_value['Fecha_de_ingreso']));
+			$mesIngreso = date('m',strtotime($asociado_value['Fecha_de_ingreso']));
+			$asociado['Ano_ing'] = $anoIngreso;
+			$asociado['Mes_ing'] = $mesIngreso;
+			$asociado['FechaCreacion'] = $anoIngreso;
 			$asociado['id_Empresa'] = $idEmpresa;
 			return $asociado;
 		}
 
 		return false;
-
-
 
 // 		return $this->insert_row($asociado);
 	}
@@ -159,24 +135,23 @@ Class Import_model extends CI_Model{
 		$this->db->set('AporteSocial',$aporte->Saldo);
 		$this->db->where('Identificacion', $aporte->Identificacion);
 		$this->db->where('Id_Empresa', $idEmpresa);
-// 		$data = ['AporteSocial' => $aporte->Saldo];
 		$this->db->update('asociados');
 	}
 
 
 	// La validacion para actualizar habil debe ser por id_empresa e identificacion
-	public function add_asociado_habil($asociado_value) {
+	public function add_asociado_habil($asociado_value, $idEmpresa) {
 		$this->db->select('*');
 		$this->db->from($this->tablaDB);
 		$this->db->where('Num_identificacion', $asociado_value['Num_identificacion']);
 		$this->db->where('Ano', $asociado_value['Ano']);
-		$this->db->where('Id_empresa', $asociado_value['Id_empresa']);
+		$this->db->where('Id_empresa', $idEmpresa);
 
 		if ($this->db->count_all_results() == 0 && $asociado_value['Num_identificacion'] != NULL) {
 			$asociado = new stdClass();
 			$asociado->Num_identificacion = $asociado_value['Num_identificacion'];
 			$asociado->Ano = $asociado_value['Ano'];
-			$asociado->Id_empresa = $asociado_value['Id_empresa'];
+			$asociado->Id_empresa = $idEmpresa;
 			$this->insert_row($asociado);
 		}
 
@@ -237,18 +212,14 @@ Class Import_model extends CI_Model{
 			$fechaFin = $directivo_value['FechaPosesion'] + $directivo_value['PeriodoVigencia'];
 			$conditionsUpdate['Fecha_fin_Comites'] = $fechaFin;
 		}
-		// TODO: validar si el update en asociados se hace por el nit
 		if (!empty($conditionsUpdate)) {
 			$this->db->where('Identificacion', $directivo_value['Nit']);
 			$this->db->where('Id_Empresa', $idEmpresa);
 			$this->db->update('asociados', $conditionsUpdate);
 		}
-
-
-
 	}
 
-	public function add_asociado_beneficiario($asociado_value) {
+	public function add_asociado_beneficiario($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
 // 		$asociado->intCodigo = $asociado_value['']; // activar autoicrement este codigo no deberia ir sino el secuence.
 		$asociado->Id_empresa = $asociado_value['Id_empresa'];
@@ -258,10 +229,10 @@ Class Import_model extends CI_Model{
 		$asociado->Email = $asociado_value['Email'];
 		return $this->insert_row($asociado);
 	}
-	// TODO: Validar esta importacion con el campo Id_asociados.
+
 	public function add_asociado_conocido($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-		$asociado->id_Asociado = $asociado_value['']; // este codigo no deberia ir sino el secuence.
+		$asociado->id_Asociado = $asociado_value['id_Asociado'];
 		$asociado->Id_empresa = $idEmpresa;
 		$asociado->strNombre = $asociado_value['StrNombre'];
 		$asociado->TelefonoCasa = $asociado_value['TelefonoCasa'];
@@ -276,7 +247,7 @@ Class Import_model extends CI_Model{
 	// TODO: Validar esta importacion con el campo Id_asociados.
 	public function add_asociado_hijo($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-		$asociado->id_Asociado = $asociado_value['']; // este codigo no deberia ir sino el secuence.
+		$asociado->id_Asociado = $asociado_value['id_Asociado'];
 		$asociado->Id_empresa = $idEmpresa;
 		$asociado->strNombre = $asociado_value['StrNombre'];
 		$asociado->TelefonoCasa = $asociado_value['TelefonoCasa'];

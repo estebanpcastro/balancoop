@@ -42,9 +42,10 @@ Class ImportData extends CI_Controller{
   			'asociados_hijos',
   			'asociados_conyuge'
   	];
+  	// Borrar data de las tablas por id_empresa
 	if (in_array($tablaDb, $tablesToDelete) && $idEmpresa) {
-		$query = ['id_Empresa' => $idEmpresa];
-		$this->import_model->delete($query);
+		$condition = ['id_Empresa' => $idEmpresa];
+		$this->import_model->delete($condition);
 	}
 
 
@@ -61,16 +62,16 @@ Class ImportData extends CI_Controller{
   				$newRow = $this->import_model->add_aporte($row, $idEmpresa);
   				break;
   			case 'asociados_habiles':
-  				$newRow = $this->import_model->add_asociado_habil($row);
+  				$newRow = $this->import_model->add_asociado_habil($row, $idEmpresa);
   				break;
   			case 'asociados_beneficiarios':
-  				$newRow = $this->import_model->add_asociado_beneficiario($row);
+  				$newRow = $this->import_model->add_asociado_beneficiario($row, $idEmpresa);
   				break;
   			case 'asociados_conocidos':
-  				$newRow = $this->import_model->add_asociado_conocido($row);
+  				$newRow = $this->import_model->add_asociado_conocido($row, $idEmpresa);
   				break;
   			case 'asociados_hijos':
-  				$newRow = $this->import_model->add_asociado_hijo($row);
+  				$newRow = $this->import_model->add_asociado_hijo($row, $idEmpresa);
   				break;
   			case 'asociados_conyuge':
   				$newRow = $this->import_model->add_asociado_conyuge($row, $idEmpresa);
