@@ -2,7 +2,7 @@
 
 interface bdinterface
 {
-	public function connect_db($username, $password, $database, $hostname);
+	public function connect_db($username, $password, $database, $hostname, $port);
 	public function disconnect_db();
 	public function execute_query($sqlQuery);
 	public function execute_query_list_data($sqlQuery);

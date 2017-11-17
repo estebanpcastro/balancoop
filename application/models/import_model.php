@@ -157,7 +157,7 @@ Class Import_model extends CI_Model{
 
 		$this->db->set('Habil', 1);
 		$this->db->where('Identificacion', $asociado_value['Num_identificacion']);
-		$this->db->where('Id_Empresa', $asociado_value['Id_empresa']);
+		$this->db->where('Id_Empresa', $idEmpresa);
 		$this->db->update('asociados');
 
 	}
@@ -222,7 +222,7 @@ Class Import_model extends CI_Model{
 	public function add_asociado_beneficiario($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
 // 		$asociado->intCodigo = $asociado_value['']; // activar autoicrement este codigo no deberia ir sino el secuence.
-		$asociado->Id_empresa = $asociado_value['Id_empresa'];
+		$asociado->Id_empresa = $idEmpresa;
 		$asociado->strNombre = $asociado_value['strNombre'];
 		$asociado->TelefonoCasa = $asociado_value['Telefono'];
 		$asociado->Identificacion = $asociado_value['Identificacion'];
@@ -275,4 +275,42 @@ Class Import_model extends CI_Model{
 		$asociado->id_Genero_Conyugue = $asociado_value['id_Genero_Conyugue'];
 		return $this->insert_row($asociado);
 	}
+	//TODO: no encuentro en la tabla asociados para actualizar
+	//TODO: esta informacion se puede manejar en la misma tabla asociados
+	public function add_asociados_motivo_retiro($asociado_value, $idEmpresa) {
+		$asociado = new stdClass();
+		$asociado->Identificacion = $asociado_value['Identificacion'];
+		$asociado->Id_empresa = $idEmpresa;
+		$asociado->Identificacion_Conyuge = $asociado_value['Id_motivo_retiro'];
+		$this->insert_row($asociado);
+	}
+	//TODO: esta informacion se puede manejar en la misma tabla asociados
+	public function add_asociados_otros_datos($asociado_value, $idEmpresa) {
+		$asociado = new stdClass();
+		$asociado->Identificacion = $asociado_value['Identificacion'];
+		$asociado->Id_empresa = $idEmpresa;
+		$asociado->Id_conocimiento_cooperativismo = $asociado_value['Id_conocimiento_cooperativismo'];
+		$asociado->Id_GrupoFamiliarid_grupo_familiar = $asociado_value['Id_GrupoFamiliarid_grupo_familiar'];
+		$asociado->Id_oficina = $asociado_value['Id_oficina'];
+		$asociado->Ingresoreal = $asociado_value['Ingresoreal'];
+		$asociado->Celular_cliente = $asociado_value['Celular_cliente'];
+		$asociado->Id_ciudad_cliente = $asociado_value['Id_ciudad_cliente'];
+		$asociado->Td_pais_cliente = $asociado_value['Td_pais_cliente'];
+		$asociado->Telefono_oficina_cliente = $asociado_value['Telefono_oficina_cliente'];
+
+		$this->insert_row($asociado);
+
+		$data = [];
+		$data['Id_conocimiento_cooperativismo'] = $asociado_value['Id_conocimiento_cooperativismo'];
+		$data['Id_GrupoFamiliar'] = $asociado_value['Id_GrupoFamiliarid_grupo_familiar'];
+		$data['Id_oficina'] = $asociado_value['Id_oficina'];
+		$data['Ingresoreal'] = $asociado_value['Ingresoreal'];
+		$data['Celular_cliente'] = $asociado_value['Celular_cliente'];
+		$data['Ciudad_cliente'] = $asociado_value['Id_ciudad_cliente'];
+		$data['Pais_cliente'] = $asociado_value['Td_pais_cliente'];
+		$this->db->where('Identificacion', $asociado_value['Identificacion']);
+		$this->db->where('Id_Empresa', $idEmpresa);
+		$this->db->update('asociados', $data);
+	}
+
 }

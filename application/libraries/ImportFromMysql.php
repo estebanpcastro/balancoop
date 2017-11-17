@@ -32,7 +32,7 @@ class ImportFromMysql extends CI_Model implements BdInterface{
 		}
 	}
 
-	public function connect_db($username, $password, $database, $hostname) {
+	public function connect_db($username, $password, $database, $hostname, $port = 3306) {
 		try {
 			$stringContection = 'mysql:host='.$hostname.';dbname='.$database;
 			$this->connect = new PDO($stringContection, $username, $password);

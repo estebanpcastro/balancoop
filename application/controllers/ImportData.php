@@ -21,11 +21,14 @@ Class ImportData extends CI_Controller{
     $this->load->model(array('import_model'));
   }
 
-  function import_oracle() {
+  function import_oracle($tablaDb, $idEmpresa = 0) {
   	$this->load->library('importfromoracle');
-  	$this->importfromoracle->connect_db('balancoop', '1234', 'XE', '127.0.0.1');
-  	$query = 'SELECT * FROM EMP';
-  	var_dump($this->importfromoracle->execute_query($query));
+  	$this->importfromoracle->connect_db('balancoop', '1234', 'XE', 'localhost');
+  	$query = 'SELECT * FROM '.$tablaDb;
+  	$rows = $this->importfromoracle->execute_query($query);
+  	$this->importfromoracle->disconnect_db();
+  	$this->validateIfCleanTable($tablaDb, $idEmpresa);
+  	$this->importRows($rows, $tablaDb, $idEmpresa);
   }
 
   function import_mysql($tablaDb, $idEmpresa = 0) {
@@ -33,22 +36,31 @@ Class ImportData extends CI_Controller{
   	$this->importfrommysql->connect_db('root', '', 'balancoop_cliente', 'localhost');
   	$query = "SELECT * FROM {$tablaDb} limit 300";
   	$rows = $this->importfrommysql->execute_query($query);
+  	$this->importfrommysql->disconnect_db();
+  	$this->validateIfCleanTable($tablaDb, $idEmpresa);
+  	$this->importRows($rows, $tablaDb, $idEmpresa);
 
+  }
+  protected function validateIfCleanTable($tablaDb, $idEmpresa) {
   	$this->import_model->load_model($tablaDb);
   	// Eliminar aosciados relacionados a la empresa.
   	$tablesToDelete = ['asociados',
-		  	'asociados_beneficiarios',
+  			'asociados_beneficiarios',
   			'asociados_conocidos',
   			'asociados_hijos',
-  			'asociados_conyuge'
+  			'asociados_conyuge',
+  			'asociados_motivo_retiro',
+
   	];
   	// Borrar data de las tablas por id_empresa
-	if (in_array($tablaDb, $tablesToDelete) && $idEmpresa) {
-		$condition = ['id_Empresa' => $idEmpresa];
-		$this->import_model->delete($condition);
-	}
+  	if (in_array($tablaDb, $tablesToDelete) && $idEmpresa) {
+  		$condition = ['id_Empresa' => $idEmpresa];
+  		$this->import_model->delete($condition);
+  	}
+  }
 
 
+  protected function importRows($rows, $tablaDb, $idEmpresa) {
   	foreach ($rows as $row) {
   		switch ($tablaDb) {
   			case 'asociados':
@@ -75,6 +87,12 @@ Class ImportData extends CI_Controller{
   				break;
   			case 'asociados_conyuge':
   				$newRow = $this->import_model->add_asociado_conyuge($row, $idEmpresa);
+  				break;
+  			case 'asociados_motivo_retiro':
+  				$newRow = $this->import_model->add_asociado_conyuge($row, $idEmpresa);
+  				break;
+  			case 'asociados_otros_datos':
+  				$newRow = $this->import_model->add_asociados_motivo_retiro($row, $idEmpresa);
   				break;
   			case 'directivos':
   				$newRow = $this->import_model->add_directivo($row, $idEmpresa);

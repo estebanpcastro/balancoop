@@ -28,16 +28,20 @@ class ImportFromOracle implements BdInterface {
 	  	return false;
 	  }
 	  $statement = oci_parse($this->connect, $sqlQuery);// Preparar la sentencia
-	  $response   = oci_execute( $statement );			// Ejecutar la sentencia
-	  oci_free_statement($statement);// Liberar los recursos asociados a una sentencia o cursor
+ 	  oci_execute( $statement );			// Ejecutar la sentencia
+ 	  $rows = [];
 
-	  return $response;
+ 	  while (($row = oci_fetch_array($statement, OCI_ASSOC+OCI_RETURN_NULLS)) != false) {
+		$rows[] = $row;
+ 	  }
+ 	  oci_free_statement($statement);// Liberar los recursos asociados a una sentencia o cursor
+	  return $rows;
 
 	}
 
-	public function connect_db($username, $password, $database, $hostname) {
+	public function connect_db($username, $password, $database, $hostname, $port = 1521) {
 	  $tns = '(DESCRIPTION = (ADDRESS_LIST = (ADDRESS = (PROTOCOL = TCP)
-			(HOST = "' . $hostname . '")(PORT = 1521)))
+			(HOST = "' . $hostname . '")(PORT = "'.$port.'")))
     		(CONNECT_DATA = (SID = "' . $database . '")))';
 	  try {
 	  	$this->connect = oci_connect($username, $password, $tns);
