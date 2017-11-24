@@ -18,7 +18,11 @@ Class ImportData extends CI_Controller{
 
   function __construct() {
     parent::__construct();
+    $this->load->helper('form');
+    $this->load->helper('url');
+    $this->load->helper('security');
     $this->load->model(array('import_model'));
+    $this->load->library('csvimport');
   }
 
   function import_oracle($tablaDb, $idEmpresa = 0) {
@@ -41,6 +45,32 @@ Class ImportData extends CI_Controller{
   	$this->importRows($rows, $tablaDb, $idEmpresa);
 
   }
+
+  function index() {
+      $this->load->view('csvindex');
+
+  }
+
+  function importcsv() {
+      if(!$this->input->is_ajax_request()){
+          //Se recibe la tabla por post
+//         print json_encode(FALSE);
+      }
+      else{
+          $categoria = $this->input->post('category');
+          if($categoria) {
+            $rows = $this->csvimport->get_array($_FILES["file"]["tmp_name"], FALSE, TRUE, 3, ';');
+            $this->validateIfCleanTable($categoria, 5);
+            $this->importRows($rows, $categoria, 5);
+            print json_encode(TRUE);
+          }
+
+      }
+
+
+
+  }
+
   protected function validateIfCleanTable($tablaDb, $idEmpresa) {
   	$this->import_model->load_model($tablaDb);
   	// Eliminar aosciados relacionados a la empresa.
@@ -64,11 +94,8 @@ Class ImportData extends CI_Controller{
   	foreach ($rows as $row) {
   		switch ($tablaDb) {
   			case 'asociados':
-
-  				$asociado = $this->import_model->add_asociado($row, $idEmpresa);
-  				if (is_array($asociado)) {
-  					$newRows[] = $asociado;
-  				}
+  			    //TODO: tomar id empresa y agencia de la sesion controlador inicio validar sesion.
+  				$asociado = $this->import_model->add_asociado($row, $idEmpresa, $codigoAngecia = 20);
   				break;
   			case 'aportes':
   				$newRow = $this->import_model->add_aporte($row, $idEmpresa);
@@ -105,9 +132,9 @@ Class ImportData extends CI_Controller{
   		}
   	}
 	// Insert multiples rows is more efficient.
-  	if ($tablaDb == 'asociados') {
-  		$this->import_model->insert_multiple_rows($newRows);
-  	}
+//   	if ($tablaDb == 'asociados') {
+//   		$this->import_model->insert_multiple_rows($newRows);
+//   	}
   }
 
 }

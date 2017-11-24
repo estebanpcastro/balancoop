@@ -67,10 +67,9 @@ Class Import_model extends CI_Model{
 	}
 
 
-	public function add_asociado($asociado_value, $idEmpresa) {
+	public function add_asociado($asociado_value, $idEmpresa, $codigoAgencia) {
 
 		$asociado = [];
-
 		if (is_array($asociado_value) && $idEmpresa) {
 			$asociado['id_TipodeIdentificacion'] = $asociado_value['Tipo_de_identificacion'];
 			$asociado['id_Asociado'] = $idEmpresa . '-' . $asociado_value['Numero_de_identificacion'];
@@ -78,66 +77,95 @@ Class Import_model extends CI_Model{
 			$asociado['PrimerApellido'] = $asociado_value['Primer_apellido'];
 			$asociado['SegundoApellido'] = $asociado_value['Segundo_apellido'];
 			$asociado['Nombre'] = $asociado_value['Nombres'];
-			$asociado['FechadeIngresoalaCooperativa'] = $asociado_value['Fecha_de_ingreso'];
+			$asociado['FechadeIngresoalaCooperativa'] = date('Y/m/d', strtotime($asociado_value['Fecha_de_ingreso']));
 			$asociado['TelefonoCasa'] = $asociado_value['Telefono'];
 			$asociado['Direccion'] = $asociado_value['Direccion'];
 			$asociado['Id_tipo'] = $asociado_value['Asociado'];
 			$asociado['id_EstadoactualEntidad'] = $asociado_value['Activo'];
-			$asociado['Departamento_Cliente'] = $asociado_value['Codigo_municipio'];
-			$asociado['CorreoElectronico'] = $asociado_value['Email'];
+			$asociado['Departamento_Cliente'] = $asociado_value['Codigo_Municipio'];
+			$asociado['CorreoElectronico'] = $asociado_value['EMail'];
 			$asociado['id_Genero_cliente'] = $asociado_value['Genero'];
 			$asociado['Estado_Empleado'] = $asociado_value['Empleado'];
 			$asociado['id_tipoempleado'] = $asociado_value['TipoContrato'];
 			$asociado['id_Escolaridad'] = $asociado_value['NivelEscolaridad'];
 			$asociado['Id_Estrato'] = $asociado_value['Estrato'];
 			$asociado['id_RangodeIngresomensual'] = $asociado_value['NivelIngresos'];
-			$asociado['FechaNacimiento'] = $asociado_value['FechaNacimiento'];
+			$asociado['FechaNacimiento'] = date('Y/m/d', strtotime($asociado_value['FechaNacimiento']));
+			$asociado['Edad_Cliente'] = $this->get_edad($asociado_value['FechaNacimiento']);
 			$asociado['id_EstadoCivil'] = $asociado_value['EstadoCivil'];
 			$asociado['id_CabezadeFamilia'] = $asociado_value['MujerCabezaFamilia'];
 			$asociado['id_Profesion'] = $asociado_value['Ocupacion'];
-			$asociado['id_Industria'] = $asociado_value['Sector_economico'];
-			$asociado['FechadeRetiro']= $asociado_value['Fecha_de_retiro'];
+			$asociado['id_Industria'] = $asociado_value['Sector_Economico'];
+			$asociado['FechadeRetiro']= empty($asociado_value['Fecha_de_Retiro_(ExAsociado)']) ? '0000-00-00' : date('Y/m/d', strtotime($asociado_value['Fecha_de_Retiro_(ExAsociado)']));
 			$anoIngreso = date('Y',strtotime($asociado_value['Fecha_de_ingreso']));
 			$mesIngreso = date('m',strtotime($asociado_value['Fecha_de_ingreso']));
 			$asociado['Ano_ing'] = $anoIngreso;
 			$asociado['Mes_ing'] = $mesIngreso;
-			$asociado['FechaCreacion'] = $anoIngreso;
+			$asociado['FechaCreacion'] = date('Y/m/d');
 			$asociado['id_Empresa'] = $idEmpresa;
-			return $asociado;
+			$asociado['id_Oficina'] = $codigoAgencia;
+			$this->insert_row($asociado);
 		}
-
 		return false;
-
-// 		return $this->insert_row($asociado);
 	}
 
 	// Toca validar porque al actualizar el aporte en la tabla asociado una cedula puede estar repetida
-	public function add_aporte($aporte_value, $idEmpresa) {
+	public function add_aporte($aporte_value, $idEmpresa, $codigoAgencia, $idCreador = 1) {
 
-		$aporte = new stdClass();
+		$clienteProducto = new stdClass();
 
-		$aporte->Identificacion = $aporte_value['Identificacion'];
-		$aporte->Saldo = $aporte_value['Saldo'];
-		$aporte->Fecha_ultimo_aporte = $aporte_value['Fecha_ultimo_aporte'];
-		$aporte->Id_empresa = $idEmpresa;
+		$clienteProducto->Identificacion = $aporte_value['Numero_de_identificacion'];
+		$clienteProducto->Saldo = $aporte_value['Saldo_a_fecha'];
+		$clienteProducto->Fecha_ultimo_aporte = $aporte_value['UltimaFecha'];
+		$clienteProducto->id_empresa = $idEmpresa;
+		$clienteProducto->cantidad = 1;
+		$clienteProducto->id_producto = $this->get_productoId($idEmpresa);
+		$clienteProducto->fecha_inicial = date('Y/m/d', strtotime($aporte_value['UltimaFecha']));
+		$clienteProducto->fecha_final = date('Y/m/d', strtotime($aporte_value['UltimaFecha']));
+		$clienteProducto->id_agencia = $codigoAgencia;
+		$clienteProducto->ano = date('Y', strtotime($aporte_value['UltimaFecha']));
+		$clienteProducto->mes = date('m', strtotime($aporte_value['UltimaFecha']));
+		$clienteProducto->dia = date('d', strtotime($aporte_value['UltimaFecha']));
+		$clienteProducto->id_usuario_creador = $idCreador;
+		$clienteProducto->agencia = $codigoAgencia;
+		// Get asociado.
+		$asociado = $this->get_asociado($aporte_value['Numero_de_identificacion'], $idEmpresa);
+		$clienteProducto->Nombre = $asociado->Nombre;
+		$clienteProducto->Celular_cliente = $asociado->Celular_cliente;
+		$clienteProducto->PrimerApellido = $asociado->PrimerApellido;
+		$clienteProducto->SegundoApellido = $asociado->SegundoApellido;
+		$clienteProducto->CorreoElectronico = $asociado->CorreoElectronico;
+		$clienteProducto->TelefonoCasa = $asociado->TelefonoCasa;
+		$clienteProducto->TelefonoOficina = $asociado->TelefonoOficina;
+		$clienteProducto->id_Genero_cliente = $asociado->id_Genero_cliente;
 
-		// TODO: validate if exist by date id_empresa, identificacion
-		$this->db->select('*');
-		$this->db->from($this->tablaDB);
-		$this->db->where('Identificacion', $aporte->Identificacion);
-		$this->db->where('Id_empresa', $idEmpresa);
-		$this->db->where('Fecha_ultimo_aporte', $aporte->Fecha_ultimo_aporte);
-		if ($this->db->count_all_results() == 0) {
-			$this->insert_row($aporte);
-		}
+		// Validate if exist by date id_empresa, identificacion in table cliente productos and delete.
+		$anoAporte = date('Y', $clienteProducto->Fecha_ultimo_aporte);
+		$conditions = ['id_Empresa' => $idEmpresa, 'ano' => $anoAporte];
+		$this->db->delete('clientes_productos', $conditions);
 
-		// update aporte
-		$this->db->set('AporteSocial',$aporte->Saldo);
-		$this->db->where('Identificacion', $aporte->Identificacion);
+		// update aporte in table asociados.
+		$this->db->set('AporteSocial',$clienteProducto->Saldo);
+		$this->db->where('Identificacion', $clienteProducto->Identificacion);
 		$this->db->where('Id_Empresa', $idEmpresa);
 		$this->db->update('asociados');
 	}
-
+	//TODO: validate response in method.
+	public function get_asociado($identificacion, $idEmpresa) {
+	    $this->db->select('*');
+	    $this->db->from('asociados');
+	    $this->db->where('Id_Empresa', $idEmpresa);
+	    $this->db->where('Identificacion', $identificacion);
+	    return $this->db->get()->result_array();
+	}
+    //TODO: validate response in method.
+    public function get_productoId($idEmpresa) {
+        $this->db->select('intCodigo');
+        $this->db->from('productos');
+        $this->db->where('Id_Empresa', $idEmpresa);
+        $this->db->like('strNombre', 'APORTES', 'simple');
+        return $this->db->get()->result_array();
+    }
 
 	// La validacion para actualizar habil debe ser por id_empresa e identificacion
 	public function add_asociado_habil($asociado_value, $idEmpresa) {
@@ -311,6 +339,41 @@ Class Import_model extends CI_Model{
 		$this->db->where('Identificacion', $asociado_value['Identificacion']);
 		$this->db->where('Id_Empresa', $idEmpresa);
 		$this->db->update('asociados', $data);
+	}
+
+	public function add_producto($producto_value, $idEmpresa) {
+	    $producto = new stdClass();
+	    //;;;;;;;;;;;;;;;;;;
+	    $producto->intCodigo = $producto['intCodigo'];
+	    $producto->strNombre = $producto['strNombre'];
+	    $producto->valor = $producto['valor'];
+	    $producto->id_proveedor = $producto['id_proveedor'];
+	    $producto->Tipo = $producto['Tipo'];
+	    $producto->requiere_matricula = $producto['requiere_matricula'];
+	    $producto->id_linea = $producto['id_linea'];
+	    $producto->id_categoria = $producto['id_categoria'];
+	    $producto->Estado = $producto['Estado'];
+	    $producto->id_empresa = $idEmpresa;
+	    $producto->transferencia = $producto['Identificacion'];
+	    $producto->habilidad1_es = $producto['habilidad1_es'];
+	    $producto->habilidad2_es = $producto['habilidad2_es'];
+	    $producto->habilidad3_es = $producto['habilidad3_es'];
+	    $producto->habilidad3 = $producto['habilidad3'];
+	    $producto->habilidad4_es = $producto['habilidad4_es'];
+	    $producto->habilidad4 = $producto['habilidad4'];
+	    $producto->habilidad5_es = $producto['habilidad5_es'];
+	    $producto->habilidad5 = $producto['habilidad5'];
+	    $producto->habilidad6_es = $producto['habilidad6_es'];
+
+	    $this->insert_row($producto);
+	}
+
+	public function get_edad($fecha){
+	    $fecha = str_replace("/","-",$fecha);
+	    $fecha = date('Y/m/d',strtotime($fecha));
+	    $hoy = date('Y/m/d');
+	    $edad = $hoy - $fecha;
+	    return $edad;
 	}
 
 }

@@ -6,7 +6,7 @@ if ( ! defined('BASEPATH')) exit('Lo sentimos, usted no tiene acceso a esta ruta
 
 /**
  * Administracion
- * 
+ *
  * @author 		       John Arley Cano Salinas
  * @author 		       Oscar Humberto Morales
  */
@@ -51,7 +51,7 @@ Class Inicio extends CI_Controller{
         // }
 
 
-    } 
+    }
 
     function cargar_interfaz(){
         //Suiche
@@ -59,10 +59,10 @@ Class Inicio extends CI_Controller{
             //Si es campaña
             case 'transferencia':
                 // $this->data['datos_asociado'] = $this->input->post('datos_asociado');
-                
+
                 //Usaremos esta variable para identificar que sea asociado
                 $this->data['es_asociado'] = true;
-                
+
                 //Se establece la vista que tiene el contenido principal
                 $this->load->view('transferencia/index_view', $this->data);
                 break;
@@ -100,7 +100,7 @@ Class Inicio extends CI_Controller{
     function cerrar_sesion(){
         //Se destruye la sesion actual
         $this->session->sess_destroy();
-        
+
         //Se redirige hacia el controlador principal
         redirect('');
     }
@@ -174,6 +174,14 @@ Class Inicio extends CI_Controller{
 
             //Si el usuario existe
             if ($datos_sesion) {
+                // Se obtiene el codigo de la agencia.
+                // TODO: mirar un refactor.
+                $this->db->where('id_Empresa', $id_empresa);
+                $agencia = $this->db->limit(1)->get('din_agencias')->row();
+                $codigo_agencia = 0;
+                if (count($agencia) == 1) {
+                    $codigo_agencia = $agencia->intCodigo;
+                }
                 $sesion = array(
                     "id_usuario" => $datos_sesion->intCodigo,
                     "nombre_usuario" => $datos_sesion->strNombre,
@@ -182,12 +190,13 @@ Class Inicio extends CI_Controller{
                     "id_filtro_por_defecto" => $datos_sesion->id_filtro_por_defecto,
                     "estado" => $datos_sesion->Estado,
                     "tipo" => $datos_sesion->id_tipo_usuario,
-                    "Actualizacion" => '0'
+                    "Actualizacion" => '0',
+                    "codigo_agencia" => $codigo_agencia ? $codigo_agencia : 0,
                 );
 
                 //Se cargan los datos a la sesión
                 $this->session->set_userdata($sesion);
-        
+
                 //Respuesta ok
                 echo true;
             }else{
