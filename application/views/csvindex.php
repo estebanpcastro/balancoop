@@ -22,7 +22,20 @@
       <option value="asociados">Asociados</option>
       <option value="aportes">Aportes</option>
       <option value="productos">Productos</option>
-      <option value="clientes_productos">Clientes productos</option>
+      <option value="directivos">Directivos</option>
+      <option value="usuarios_sistema">Usuarios del sistema</option>
+      <option value="clave_transferencia">Transferencia de cartera</option>
+      <option value="tasa_mercado">Tasa de mercado</option>
+      <option value="cliente_producto_credito">Clientes productos creditos</option>
+      <option value="clientes_productos_captacion">Clientes productos captación</option>
+      <option value="clientes_productos_captacion">Clientes productos sociales</option>
+      <option value="asociados_habiles">Asociados hábiles</option>
+      <option value="asociados_beneficiarios">Asociados Beneficiaros</option>
+      <option value="asociados_conocidos">Asociados conocidos</option>
+      <option value="asociados_hijos">Asociados hijos</option>
+      <option value="asociados_conyuge">Asociados conyugues</option>
+      <option value="asociados_motivo_retiro">Asociados motivo de retiro</option>
+
     </select>
    </div>
    <br />

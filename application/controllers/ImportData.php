@@ -54,7 +54,7 @@ Class ImportData extends CI_Controller{
   function importcsv() {
       if(!$this->input->is_ajax_request()){
           //Se recibe la tabla por post
-//         print json_encode(FALSE);
+        print json_encode(FALSE);
       }
       else{
           $categoria = $this->input->post('category');
@@ -75,22 +75,30 @@ Class ImportData extends CI_Controller{
   	$this->import_model->load_model($tablaDb);
   	// Eliminar aosciados relacionados a la empresa.
   	$tablesToDelete = ['asociados',
-  			'asociados_beneficiarios',
-  			'asociados_conocidos',
-  			'asociados_hijos',
-  			'asociados_conyuge',
-  			'asociados_motivo_retiro',
-
+		'asociados_beneficiarios',
+		'asociados_conocidos',
+		'asociados_hijos',
+		'asociados_conyuge',
+		'asociados_motivo_retiro',
+  	    'productos',
+  	    'usuarios_sistema',
+  	    'clave_transferencia'
   	];
   	// Borrar data de las tablas por id_empresa
   	if (in_array($tablaDb, $tablesToDelete) && $idEmpresa) {
-  		$condition = ['id_Empresa' => $idEmpresa];
+  	    $condition = ['id_Empresa' => $idEmpresa];
   		$this->import_model->delete($condition);
   	}
   }
 
 
   protected function importRows($rows, $tablaDb, $idEmpresa) {
+    if ($tablaDb == 'aportes' && $rows) {
+        //GET first row año ultimo aporte
+        $fechaUltimo = explode('/', $rows[0]['UltimaFecha']);
+        $conditions = ['id_Empresa' => $idEmpresa, 'ano' => $fechaUltimo[2]];
+        $this->db->delete('clientes_productos', $conditions);
+    }
   	foreach ($rows as $row) {
   		switch ($tablaDb) {
   			case 'asociados':
@@ -98,7 +106,7 @@ Class ImportData extends CI_Controller{
   				$asociado = $this->import_model->add_asociado($row, $idEmpresa, $codigoAngecia = 20);
   				break;
   			case 'aportes':
-  				$newRow = $this->import_model->add_aporte($row, $idEmpresa);
+  				$newRow = $this->import_model->add_aporte($row, $idEmpresa, 2);
   				break;
   			case 'asociados_habiles':
   				$newRow = $this->import_model->add_asociado_habil($row, $idEmpresa);
@@ -124,8 +132,27 @@ Class ImportData extends CI_Controller{
   			case 'directivos':
   				$newRow = $this->import_model->add_directivo($row, $idEmpresa);
   				break;
-
-
+  			case 'productos':
+  			    $newRow = $this->import_model->add_producto($row, $idEmpresa);
+  			    break;
+  			case 'usuarios_sistema':
+                $newRow = $this->import_model->add_usuario_sistema($row, $idEmpresa);
+  			    break;
+  			case 'clave_transferencia':
+  			    $newRow = $this->import_model->add_clave_transferecia($row, $idEmpresa);
+  			    break;
+  			case 'tasa_mercado':
+  			    $newRow = $this->import_model->add_tasa_mercado($row, $idEmpresa);
+  			    break;
+  			case 'cliente_producto_credito':
+  			    $newRow = $this->import_model->add_cliente_producto_credito($row, $idEmpresa, 10, 2017, 'P-Test01', '1');
+  			    break;
+  			case 'cliente_producto_captacion':
+  			    $newRow = $this->import_model->add_cliente_producto_captacion($row, $idEmpresa);
+  			    break;
+  			case 'cliente_producto_social':
+  			    $newRow = $this->import_model->add_cliente_producto_social($row, $idEmpresa);
+  			    break;
   			default:
   				$newRow = null;
   				break;

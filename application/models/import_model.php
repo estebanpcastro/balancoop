@@ -113,58 +113,153 @@ Class Import_model extends CI_Model{
 	public function add_aporte($aporte_value, $idEmpresa, $codigoAgencia, $idCreador = 1) {
 
 		$clienteProducto = new stdClass();
+		if($aporte_value['UltimaFecha']) {
+		    $fecha = explode("/", $aporte_value['UltimaFecha']);
+		    $fechaFinal = $fecha[2].'/'.$fecha[1].'/'.$fecha[0];
+		}
 
-		$clienteProducto->Identificacion = $aporte_value['Numero_de_identificacion'];
-		$clienteProducto->Saldo = $aporte_value['Saldo_a_fecha'];
-		$clienteProducto->Fecha_ultimo_aporte = $aporte_value['UltimaFecha'];
+		// update aporte in table asociados.
+		if($aporte_value['Numero_de_identificacion']) {
+    		$this->db->set('AporteSocial', $aporte_value['Saldo_a_fecha']);
+    		$this->db->where('Identificacion', $aporte_value['Numero_de_identificacion']);
+    		$this->db->where('Id_Empresa', $idEmpresa);
+    		$this->db->update('asociados');
+		}
+
+		$clienteProducto->id_cliente = $aporte_value['Numero_de_identificacion'];
+		$clienteProducto->transferencia = $aporte_value['Saldo_a_fecha'];
 		$clienteProducto->id_empresa = $idEmpresa;
 		$clienteProducto->cantidad = 1;
-		$clienteProducto->id_producto = $this->get_productoId($idEmpresa);
-		$clienteProducto->fecha_inicial = date('Y/m/d', strtotime($aporte_value['UltimaFecha']));
-		$clienteProducto->fecha_final = date('Y/m/d', strtotime($aporte_value['UltimaFecha']));
+		// get codigo producto
+		$codeProduct = $this->get_productoId($idEmpresa, 'APORTES');
+		$clienteProducto->id_producto = empty($codeProduct) ? 0 : $codeProduct['intCodigo'];
+		$clienteProducto->fecha_inicial = $fechaFinal;
+		$clienteProducto->fecha_final = $fechaFinal;
 		$clienteProducto->id_agencia = $codigoAgencia;
-		$clienteProducto->ano = date('Y', strtotime($aporte_value['UltimaFecha']));
-		$clienteProducto->mes = date('m', strtotime($aporte_value['UltimaFecha']));
-		$clienteProducto->dia = date('d', strtotime($aporte_value['UltimaFecha']));
+		$clienteProducto->ano = $fecha[2];
+		$clienteProducto->mes = $fecha[1];
+		$clienteProducto->dia = $fecha[0];
 		$clienteProducto->id_usuario_creador = $idCreador;
 		$clienteProducto->agencia = $codigoAgencia;
 		// Get asociado.
 		$asociado = $this->get_asociado($aporte_value['Numero_de_identificacion'], $idEmpresa);
-		$clienteProducto->Nombre = $asociado->Nombre;
-		$clienteProducto->Celular_cliente = $asociado->Celular_cliente;
-		$clienteProducto->PrimerApellido = $asociado->PrimerApellido;
-		$clienteProducto->SegundoApellido = $asociado->SegundoApellido;
-		$clienteProducto->CorreoElectronico = $asociado->CorreoElectronico;
-		$clienteProducto->TelefonoCasa = $asociado->TelefonoCasa;
-		$clienteProducto->TelefonoOficina = $asociado->TelefonoOficina;
-		$clienteProducto->id_Genero_cliente = $asociado->id_Genero_cliente;
-
-		// Validate if exist by date id_empresa, identificacion in table cliente productos and delete.
-		$anoAporte = date('Y', $clienteProducto->Fecha_ultimo_aporte);
-		$conditions = ['id_Empresa' => $idEmpresa, 'ano' => $anoAporte];
-		$this->db->delete('clientes_productos', $conditions);
-
-		// update aporte in table asociados.
-		$this->db->set('AporteSocial',$clienteProducto->Saldo);
-		$this->db->where('Identificacion', $clienteProducto->Identificacion);
-		$this->db->where('Id_Empresa', $idEmpresa);
-		$this->db->update('asociados');
+		if ($asociado) {
+    		$clienteProducto = $this->setClienteProductoFromAsociado($asociado, $clienteProducto);
+            // Create new cliente producto.
+    		$this->add_cliente_producto($clienteProducto);
+		}
 	}
-	//TODO: validate response in method.
-	public function get_asociado($identificacion, $idEmpresa) {
-	    $this->db->select('*');
-	    $this->db->from('asociados');
-	    $this->db->where('Id_Empresa', $idEmpresa);
-	    $this->db->where('Identificacion', $identificacion);
-	    return $this->db->get()->result_array();
+
+	public function add_cliente_producto_credito($value, $idEmpresa, $mes, $ano, $codigoAgencia, $idCreador) {
+	    $asociado = $this->get_asociado($value['Numero_identificacion'], $idEmpresa);
+	    $producto = $this->get_productoId($idEmpresa, $value['LineaCredEntidad']);
+	    if (!empty($asociado)) {
+	        if (!empty($producto)) {
+	            $this->create_cliente_producto_values($asociado, $value['Saldo_de_capital'], $value['Tasa_de_interes_nominal_cobrada'], $producto['intCodigo'], $codigoAgencia, $idCreador, $ano, $mes);
+	        }
+	        else {
+	            //TODO: mirara que hacer para informar.
+	        }
+	    }
+	    else {
+	        //TODO: mirar que hacer para notificar al cliente.
+	    }
 	}
+
+	public function add_cliente_producto_captacion($value, $idEmpresa, $mes, $ano, $codigoAgencia, $idCreador) {
+	    $asociado = $this->get_asociado($value['NIT'], $idEmpresa);
+	    $producto = $this->get_productoId($idEmpresa, $value['NombreDeposito']);
+	    if (!empty($asociado)) {
+	        if (!empty($producto)) {
+	            $this->create_cliente_producto_values($asociado, $value['Saldo'], $value['TasaInteresNominal'], $producto['intCodigo'], $codigoAgencia, $idCreador, $ano, $mes);
+	        }
+	        else {
+	            //TODO: mirara que hacer para informar.
+	        }
+	    }
+	    else {
+	        //TODO: mirar que hacer para notificar al cliente.
+	    }
+	}
+	public function add_cliente_producto_social() {
+
+	}
+
+	public function setClienteProductoFromAsociado($asociado, $clienteProducto){
+	    $clienteProducto->Nombre = $asociado['Nombre'];
+	    $clienteProducto->Celular_cliente = $asociado['Celular_cliente'];
+	    $clienteProducto->PrimerApellido = $asociado['PrimerApellido'];
+	    $clienteProducto->SegundoApellido = $asociado['SegundoApellido'];
+	    $clienteProducto->CorreoElectronico = $asociado['CorreoElectronico'];
+	    $clienteProducto->TelefonoCasa = $asociado['TelefonoCasa'];
+	    $clienteProducto->TelefonoOficina = $asociado['TelefonoOficina'];
+	    $clienteProducto->id_Genero_cliente = $asociado['id_Genero_cliente'];
+
+	    return $clienteProducto;
+	}
+
+	public function create_cliente_producto_values($asociado, $saldo, $tasaInteres, $codigoProducto, $codigoAgencia, $idCreador, $ano, $mes, $fechaUltima = '') {
+	    $clienteProducto = new stdClass();
+	    $clienteProducto = $this->setClienteProductoFromAsociado($asociado, $clienteProducto);
+	    $clienteProducto->cantidad = 1;
+	    $clienteProducto->id_empresa = $asociado['id_Empresa'];
+	    $clienteProducto->id_producto = $codigoProducto;
+	    $clienteProducto->id_cliente = $asociado['Identificacion'];
+	    $tasaMercado = $this->get_tasa_mercado($codigoProducto, $ano, $mes, $asociado['id_Empresa']);
+	    if (!empty($tasaMercado)) {
+	        $saldo = ($tasaInteres * $saldo) - ($tasaMercado['Tasa'] * $saldo);
+	        $clienteProducto->transferencia = $saldo;
+	        $fecha = str_replace('/', '-', $fechaUltima);
+	        $fecha = empty($fechaUltima) ? $fechaUltima : date('Y-m-d', strtotime($fecha));
+	        $clienteProducto->fecha_inicial = $fecha;
+	        $clienteProducto->fecha_final = $fecha;
+	        $clienteProducto->id_agencia = $codigoAgencia;
+	        $clienteProducto->ano = $ano;
+	        $clienteProducto->mes = $mes;
+	        $clienteProducto->dia = empty($fechaUltima) ? $fechaUltima : date('d', strtotime($fecha));
+	        $clienteProducto->id_usuario_creador = $idCreador;
+	        $clienteProducto->agencia = $codigoAgencia;
+	        // Create new cliente producto.
+	        $this->add_cliente_producto($clienteProducto);
+	    }
+	}
+
     //TODO: validate response in method.
-    public function get_productoId($idEmpresa) {
+    public function get_productoId($idEmpresa, $conditionText = '', $codigo = 0) {
         $this->db->select('intCodigo');
         $this->db->from('productos');
         $this->db->where('Id_Empresa', $idEmpresa);
-        $this->db->like('strNombre', 'APORTES', 'simple');
-        return $this->db->get()->result_array();
+        if (!empty($conditionText)) {
+            $this->db->like('strNombre', $conditionText, 'simple');
+        }
+
+        if ($codigo) {
+            $this->db->like('intCodigo', $codigo);
+        }
+        return $this->db->limit(1)->get()->row_array();
+    }
+
+    public function add_cliente_producto($clienteProducto) {
+        $tableBefore = $this->tablaDB;
+        $this->tablaDB = 'clientes_productos';
+        if (empty($this->get_cliente_producto($clienteProducto))) {
+            $this->insert_row($clienteProducto);
+        } else {
+            $this->db->set($clienteProducto);
+            $this->db->where('id_cliente', $clienteProducto->id_cliente);
+            $this->db->where('id_empresa', $clienteProducto->id_empresa);
+            $this->db->update('clientes_productos');
+        }
+
+        $this->tablaDB = $tableBefore;
+    }
+
+    public function get_cliente_producto($clienteProducto){
+        $this->db->select('*');
+        $this->db->from('clientes_productos');
+        $this->db->where('id_empresa', $clienteProducto->id_empresa);
+        $this->db->where('id_cliente', $clienteProducto->id_cliente);
+        return $this->db->limit(1)->get()->row_array();
     }
 
 	// La validacion para actualizar habil debe ser por id_empresa e identificacion
@@ -175,7 +270,7 @@ Class Import_model extends CI_Model{
 		$this->db->where('Ano', $asociado_value['Ano']);
 		$this->db->where('Id_empresa', $idEmpresa);
 
-		if ($this->db->count_all_results() == 0 && $asociado_value['Num_identificacion'] != NULL) {
+		if ($this->db->count_all_results() == 0) {
 			$asociado = new stdClass();
 			$asociado->Num_identificacion = $asociado_value['Num_identificacion'];
 			$asociado->Ano = $asociado_value['Ano'];
@@ -197,59 +292,62 @@ Class Import_model extends CI_Model{
 		$this->db->from($this->tablaDB);
 		$this->db->where('Nit', $directivo_value['Nit']);
 		$this->db->where('Id_empresa', $idEmpresa);
-
-
 		if ($this->db->count_all_results() == 0) {
 			$directivo = new stdClass();
 			$directivo->Id_empresa = $idEmpresa;
 			$directivo->Id_TipoDirectivo = $directivo_value['Id_TipoDirectivo'];
 			$directivo->TipoIden = $directivo_value['TipoIden'];
 			$directivo->Nit = $directivo_value['Nit'];
-			$directivo->Calidad = $directivo_value['Calidad'];
-			$directivo->FechaNombra = $directivo_value['FechaNombra'];
+// 			$directivo->Calidad = $directivo_value['Calidad'];
+			$fechaNombramiento = str_ireplace('/', '-', $directivo_value['FechaNombra']);
+			$directivo->FechaNombra = date('Y/m/d', strtotime($fechaNombramiento));
 			$directivo->EmpresaRevisorFiscal = $directivo_value['EmpresaRevisorFiscal'];
 			$directivo->TarjetaProfRevisorFiscal = $directivo_value['TarjetaProfRevisorFiscal'];
-			$directivo->FechaPosesion = $directivo_value['FechaPosesion'];
+			$fechaPosesion = $directivo_value['FechaPosesion'] ? $directivo_value['FechaPosesion'] : $directivo_value['FechaNombra'];
+			$fechaPosesion = str_ireplace('/', '-', $fechaPosesion);
+			$directivo->FechaPosesion = date('Y/m/d', strtotime($fechaPosesion));
 			$directivo->PeriodoVigencia = $directivo_value['PeriodoVigencia'];
 			$directivo->Parentescos = $directivo_value['Parentescos'];
 			$directivo->Vinculadas = $directivo_value['Vinculadas'];
 			$this->insert_row($directivo);
-		}
 
-		// Se busca que si esta en la tabla asociados por el id
-		//TODO: validar con los otros codigos que se debe hacer
-		$conditionsUpdate = [];
-		$tipoDirectivoJunta = [2, 10, 12];
-		$tipoDirectivoConsejero = [7, 1, 9];
-		$tipoDirectivoComites = [8, 11];
-		if (in_array($directivo_value['Id_TipoDirectivo'],$tipoDirectivoConsejero)) {
-			$conditionsUpdate['EstadocomoConsejero'] = 1;
-			$conditionsUpdate['Fecha_Inicio_Consejero'] = $directivo_value['FechaPosesion'];
-			$fechaFin = $directivo_value['FechaPosesion'] + $directivo_value['PeriodoVigencia'];
-			$conditionsUpdate['Fecha_fin_Consejero'] = $fechaFin;
-		}
-		else if (in_array($directivo_value['Id_TipoDirectivo'], $tipoDirectivoJunta)) {
-			$conditionsUpdate['EstadocomoJuntadeVigilancia'] = 1;
-			$conditionsUpdate['Fecha_Inicio_Junta'] = $directivo_value['FechaPosesion'];
-			$fechaFin = $directivo_value['FechaPosesion'] + $directivo_value['PeriodoVigencia'];
-			$conditionsUpdate['Fecha_fin_Junta'] = $fechaFin;
-		}
-		else if (in_array($directivo_value['Id_TipoDirectivo'], $tipoDirectivoComites)) {
-			$conditionsUpdate['EstadoenComites'] = 1;
-			$conditionsUpdate['Fecha_Inicio_Comites'] = $directivo_value['FechaPosesion'];
-			$fechaFin = $directivo_value['FechaPosesion'] + $directivo_value['PeriodoVigencia'];
-			$conditionsUpdate['Fecha_fin_Comites'] = $fechaFin;
-		}
-		if (!empty($conditionsUpdate)) {
-			$this->db->where('Identificacion', $directivo_value['Nit']);
-			$this->db->where('Id_Empresa', $idEmpresa);
-			$this->db->update('asociados', $conditionsUpdate);
+			// Se busca que si esta en la tabla asociados por el id.
+			//TODO: validar con los otros codigos que se debe hacer
+			$conditionsUpdate = [];
+			$tipoDirectivoJunta = [2, 10, 12];
+			$tipoDirectivoConsejero = [7, 1, 9];
+			$tipoDirectivoComites = [8, 11];
+			//Get Fechas nombramiento y vigencia.
+			$vigencia = '+'.$directivo_value['PeriodoVigencia'].' year';
+			$nuevafecha = strtotime ($vigencia , strtotime($fechaPosesion)); //Se añade un año mas
+			$fechaFin = date ('Y/m/d',$nuevafecha);
+			$fechaPosesion = date('Y/m/d', strtotime($fechaPosesion));
+			if (in_array($directivo_value['Id_TipoDirectivo'],$tipoDirectivoConsejero)) {
+			    $conditionsUpdate['EstadocomoConsejero'] = 1;
+			    $conditionsUpdate['Fecha_Inicio_Consejero'] = $fechaPosesion;
+			    $conditionsUpdate['Fecha_fin_Consejero'] = $fechaFin;
+			}
+			else if (in_array($directivo_value['Id_TipoDirectivo'], $tipoDirectivoJunta)) {
+			    $conditionsUpdate['EstadocomoJuntadeVigilancia'] = 1;
+			    $conditionsUpdate['Fecha_Inicio_Junta'] = $fechaPosesion;
+			    $conditionsUpdate['Fecha_fin_Junta'] = $fechaFin;
+			}
+			else if (in_array($directivo_value['Id_TipoDirectivo'], $tipoDirectivoComites)) {
+			    $conditionsUpdate['EstadoenComites'] = 1;
+			    $conditionsUpdate['Fecha_Inicio_Comites'] = $fechaPosesion;
+			    $conditionsUpdate['Fecha_fin_Comites'] = $fechaFin;
+			}
+			if (!empty($conditionsUpdate)) {
+			    $this->db->where('Identificacion', $directivo_value['Nit']);
+			    $this->db->where('Id_Empresa', $idEmpresa);
+			    $this->db->update('asociados', $conditionsUpdate);
+			}
 		}
 	}
 
 	public function add_asociado_beneficiario($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-// 		$asociado->intCodigo = $asociado_value['']; // activar autoicrement este codigo no deberia ir sino el secuence.
+		$asociado->id_Asociado = $idEmpresa.'-'.$asociado_value['Identificacion']; // activar autoicrement este codigo no deberia ir sino el secuence.
 		$asociado->Id_empresa = $idEmpresa;
 		$asociado->strNombre = $asociado_value['strNombre'];
 		$asociado->TelefonoCasa = $asociado_value['Telefono'];
@@ -343,29 +441,96 @@ Class Import_model extends CI_Model{
 
 	public function add_producto($producto_value, $idEmpresa) {
 	    $producto = new stdClass();
-	    //;;;;;;;;;;;;;;;;;;
-	    $producto->intCodigo = $producto['intCodigo'];
-	    $producto->strNombre = $producto['strNombre'];
-	    $producto->valor = $producto['valor'];
-	    $producto->id_proveedor = $producto['id_proveedor'];
-	    $producto->Tipo = $producto['Tipo'];
-	    $producto->requiere_matricula = $producto['requiere_matricula'];
-	    $producto->id_linea = $producto['id_linea'];
-	    $producto->id_categoria = $producto['id_categoria'];
-	    $producto->Estado = $producto['Estado'];
-	    $producto->id_empresa = $idEmpresa;
-	    $producto->transferencia = $producto['Identificacion'];
-	    $producto->habilidad1_es = $producto['habilidad1_es'];
-	    $producto->habilidad2_es = $producto['habilidad2_es'];
-	    $producto->habilidad3_es = $producto['habilidad3_es'];
-	    $producto->habilidad3 = $producto['habilidad3'];
-	    $producto->habilidad4_es = $producto['habilidad4_es'];
-	    $producto->habilidad4 = $producto['habilidad4'];
-	    $producto->habilidad5_es = $producto['habilidad5_es'];
-	    $producto->habilidad5 = $producto['habilidad5'];
-	    $producto->habilidad6_es = $producto['habilidad6_es'];
+	    $producto->intCodigo = $producto_value['intCodigo'];
+	    $producto->strNombre = $producto_value['strNombre'];
+	    $producto->valor = $producto_value['valor'];
+	    $producto->id_proveedor = $producto_value['id_proveedor'];
+	    $producto->Tipo = $producto_value['Tipo'];
+	    $producto->requiere_matricula = $producto_value['requiere_matricula'];
+	    $producto->id_linea = $producto_value['id_linea'];
+	    $producto->id_categoria = $producto_value['id_categoria'];
+	    $producto->Estado = $producto_value['Estado'];
+	    $producto->id_empresa = $producto_value['id_empresa'];
+	    $producto->transferencia = $producto_value['transferencia'];
+	    $producto->habilidad1_es = $producto_value['habilidad1_es'];
+	    $producto->habilidad2_es = $producto_value['habilidad2_es'];
+	    $producto->habilidad3_es = $producto_value['habilidad3_es'];
+	    $producto->habilidad3 = $producto_value['habilidad3'];
+	    $producto->habilidad4_es = $producto_value['habilidad4_es'];
+	    $producto->habilidad4 = $producto_value['habilidad4'];
+	    $producto->habilidad5_es = $producto_value['habilidad5_es'];
+	    $producto->habilidad5 = $producto_value['habilidad5'];
+	    $producto->habilidad6_es = $producto_value['habilidad6_es'];
 
 	    $this->insert_row($producto);
+	}
+
+	public function add_usuario_sistema($usuario_value, $idEmpresa) {
+	    $usuario = new stdClass();
+	    $usuario->Identificacion = $usuario_value['Identificacion'];
+	    $usuario->Id_empresa = $idEmpresa;
+	    $usuario->Estado = $usuario_value['Estado'];
+	    $usuario->id_filtro_por_defecto = $usuario_value['id_filtro_por_defecto'];
+	    $usuario->id_tipo_usuario = $usuario_value['id_tipo_usuario'];
+	    $usuario->login = $usuario_value['login'];
+	    //TODO: encriptar pass.
+	    $usuario->password = $usuario_value['password'];
+	    $usuario->strNombre = $usuario_value['strNombre'];
+	    $this->insert_row($usuario);
+	}
+
+	public function add_clave_transferecia($clave_value, $idEmpresa) {
+	    $usuario = new stdClass();
+	    $usuario->identificacion = $clave_value['Identificacion'];
+	    $usuario->Id_empresa = $idEmpresa;
+	    //TODO: encriptar clave.
+	    $usuario->Clave_transferencia = $idEmpresa.'-'.$clave_value['Identificacion'];
+	    $this->insert_row($usuario);
+	    $data = ['Clave_transferencia' => $usuario->Clave_transferencia];
+	    $this->db->where('Identificacion', $clave_value['Identificacion']);
+	    $this->db->where('Id_Empresa', $idEmpresa);
+	    $this->db->update('asociados', $data);
+	}
+
+	public function add_tasa_mercado($tasa_value, $idEmpresa) {
+
+	    $this->db->select('*');
+	    $this->db->from($this->tablaDB);
+	    $this->db->where('Mes', $tasa_value['Mes']);
+	    $this->db->where('Ano', $tasa_value['Ano']);
+	    $this->db->where('Id_empresa', $idEmpresa);
+	    if ($this->db->count_all_results() == 0) {
+	        $tasa = new stdClass();
+	        $tasa->Tasa = $tasa_value['Tasa'];
+	        $tasa->Id_empresa = $idEmpresa;
+	        $tasa->Mes = $tasa_value['Mes'];
+	        $tasa->Ano = $tasa_value['Ano'];
+	        if ($this->get_productoId($idEmpresa,'',$tasa_value['Id_Producto'])) {
+	            $tasa->Id_Producto = $tasa_value['Id_Producto'];
+	            $this->insert_row($tasa);
+	        }
+	    }
+	}
+
+	public function get_tasa_mercado($idProducto, $ano, $mes, $idEmpresa){
+	    $this->db->select('Tasa');
+	    $this->db->from('tasa_mercado');
+	    $this->db->where('Id_Producto', $idProducto);
+	    $this->db->where('id_Empresa', $idEmpresa);
+	    return $this->db->limit(1)->get()->row_array();
+	}
+
+	//TODO: validate response in method.
+	public function get_asociado($identificacion, $idEmpresa) {
+	    $this->db->select('*');
+	    $this->db->from('asociados');
+	    $this->db->where('Id_Empresa', $idEmpresa);
+	    $this->db->where('Identificacion', $identificacion);
+	    $result = $this->db->get()->row_array();
+	    if (count($result) > 0) {
+	        return $result;
+	    }
+	    return false;
 	}
 
 	public function get_edad($fecha){

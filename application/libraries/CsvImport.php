@@ -37,7 +37,7 @@ class Csvimport {
     {
         // Raise memory limit (for big files)
         ini_set('memory_limit', '20M');
-
+        $result = false;
         // File path
         if(! $filepath)
         {
