@@ -131,7 +131,7 @@ Class Import_model extends CI_Model{
 		$clienteProducto->id_empresa = $idEmpresa;
 		$clienteProducto->cantidad = 1;
 		// get codigo producto
-		$codeProduct = $this->get_productoId($idEmpresa, 'APORTES');
+		$codeProduct = $this->get_productoId('aportes', $idEmpresa, 'APORTES');
 		$clienteProducto->id_producto = empty($codeProduct) ? 0 : $codeProduct['intCodigo'];
 		$clienteProducto->fecha_inicial = $fechaFinal;
 		$clienteProducto->fecha_final = $fechaFinal;
@@ -152,10 +152,20 @@ Class Import_model extends CI_Model{
 
 	public function add_cliente_producto_credito($value, $idEmpresa, $mes, $ano, $codigoAgencia, $idCreador) {
 	    $asociado = $this->get_asociado($value['Numero_identificacion'], $idEmpresa);
-	    $producto = $this->get_productoId($idEmpresa, $value['LineaCredEntidad']);
+	    $producto = $this->get_productoId('credito', $idEmpresa, $value['LineaCredEntidad']);
 	    if (!empty($asociado)) {
 	        if (!empty($producto)) {
-	            $this->create_cliente_producto_values($asociado, $value['Saldo_de_capital'], $value['Tasa_de_interes_nominal_cobrada'], $producto['intCodigo'], $codigoAgencia, $idCreador, $ano, $mes);
+	            $this->create_cliente_producto_values(
+	                'credito',
+	                $asociado,
+	                $value['Valor_cuota_fija'],
+	                $value['Tasa_de_interes_nominal_cobrada'],
+	                $producto['intCodigo'],
+	                $codigoAgencia,
+	                $idCreador,
+	                $ano,
+	                $mes,
+	                $value['Fecha_ultimo_pago']);
 	        }
 	        else {
 	            //TODO: mirara que hacer para informar.
@@ -168,10 +178,20 @@ Class Import_model extends CI_Model{
 
 	public function add_cliente_producto_captacion($value, $idEmpresa, $mes, $ano, $codigoAgencia, $idCreador) {
 	    $asociado = $this->get_asociado($value['NIT'], $idEmpresa);
-	    $producto = $this->get_productoId($idEmpresa, $value['NombreDeposito']);
+	    $producto = $this->get_productoId('captacion', $idEmpresa, $value['NombreDeposito']);
 	    if (!empty($asociado)) {
 	        if (!empty($producto)) {
-	            $this->create_cliente_producto_values($asociado, $value['Saldo'], $value['TasaInteresNominal'], $producto['intCodigo'], $codigoAgencia, $idCreador, $ano, $mes);
+	            $this->create_cliente_producto_values(
+	                'captacion',
+	                $asociado,
+	                $value['Saldo'],
+	                $value['TasaInteresNominal'],
+	                $producto['intCodigo'],
+	                $codigoAgencia,
+	                $idCreador,
+	                $ano,
+	                $mes
+	                );
 	        }
 	        else {
 	            //TODO: mirara que hacer para informar.
@@ -198,7 +218,7 @@ Class Import_model extends CI_Model{
 	    return $clienteProducto;
 	}
 
-	public function create_cliente_producto_values($asociado, $saldo, $tasaInteres, $codigoProducto, $codigoAgencia, $idCreador, $ano, $mes, $fechaUltima = '') {
+	public function create_cliente_producto_values($tipo, $asociado, $saldo, $tasaInteres, $codigoProducto, $codigoAgencia, $idCreador, $ano, $mes, $fechaUltima = '') {
 	    $clienteProducto = new stdClass();
 	    $clienteProducto = $this->setClienteProductoFromAsociado($asociado, $clienteProducto);
 	    $clienteProducto->cantidad = 1;
@@ -207,10 +227,16 @@ Class Import_model extends CI_Model{
 	    $clienteProducto->id_cliente = $asociado['Identificacion'];
 	    $tasaMercado = $this->get_tasa_mercado($codigoProducto, $ano, $mes, $asociado['id_Empresa']);
 	    if (!empty($tasaMercado)) {
-	        $saldo = ($tasaInteres * $saldo) - ($tasaMercado['Tasa'] * $saldo);
+	        if ($tipo == 'captacion') {
+	            $saldo = (($tasaInteres / 12) * $saldo) - (($tasaMercado['Tasa'] / 12) * $saldo);
+	        }
+	        else if ($tipo == 'credito') {
+	            $saldo = (($tasaMercado['Tasa'] / 12) * $saldo) / ($tasaInteres / 12);
+	        }
+
 	        $clienteProducto->transferencia = $saldo;
 	        $fecha = str_replace('/', '-', $fechaUltima);
-	        $fecha = empty($fechaUltima) ? $fechaUltima : date('Y-m-d', strtotime($fecha));
+	        $fecha = empty($fechaUltima) ? date('Y-m-d', strtotime($ano.'-'.$mes.'-31')) : date('Y-m-d', strtotime($fecha));
 	        $clienteProducto->fecha_inicial = $fecha;
 	        $clienteProducto->fecha_final = $fecha;
 	        $clienteProducto->id_agencia = $codigoAgencia;
@@ -225,11 +251,15 @@ Class Import_model extends CI_Model{
 	}
 
     //TODO: validate response in method.
-    public function get_productoId($idEmpresa, $conditionText = '', $codigo = 0) {
+    public function get_productoId($tipo, $idEmpresa, $conditionText = '', $codigo = 0) {
         $this->db->select('intCodigo');
         $this->db->from('productos');
         $this->db->where('Id_Empresa', $idEmpresa);
-        if (!empty($conditionText)) {
+        $validateByCode = ['aportes', 'captacion'];
+        if (!empty($conditionText) && !in_array($tipo, $validateByCode)) {
+            $this->db->like('intCodigo', $conditionText, 'simple');
+        }
+        if (!empty($conditionText) && in_array($tipo, $validateByCode)) {
             $this->db->like('strNombre', $conditionText, 'simple');
         }
 
@@ -259,6 +289,7 @@ Class Import_model extends CI_Model{
         $this->db->from('clientes_productos');
         $this->db->where('id_empresa', $clienteProducto->id_empresa);
         $this->db->where('id_cliente', $clienteProducto->id_cliente);
+        $this->db->where('id_producto', $clienteProducto->id_producto);
         return $this->db->limit(1)->get()->row_array();
     }
 
@@ -279,7 +310,7 @@ Class Import_model extends CI_Model{
 		}
 
 		$this->db->set('Habil', 1);
-		$this->db->where('Identificacion', $asociado_value['Num_identificacion']);
+		$this->db->where('id_Asociado', $asociado_value['Num_identificacion']);
 		$this->db->where('Id_Empresa', $idEmpresa);
 		$this->db->update('asociados');
 
@@ -347,11 +378,11 @@ Class Import_model extends CI_Model{
 
 	public function add_asociado_beneficiario($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-		$asociado->id_Asociado = $idEmpresa.'-'.$asociado_value['Identificacion']; // activar autoicrement este codigo no deberia ir sino el secuence.
+		$asociado->id_Asociado = $asociado_value['id_Asociado']; // activar autoicrement este codigo no deberia ir sino el secuence.
 		$asociado->Id_empresa = $idEmpresa;
 		$asociado->strNombre = $asociado_value['strNombre'];
-		$asociado->TelefonoCasa = $asociado_value['Telefono'];
-		$asociado->Identificacion = $asociado_value['Identificacion'];
+		$asociado->TelefonoCasa = $asociado_value['TelefonoCasa'];
+		$asociado->TelefonoOficina = $asociado_value['TelefonoOficina'];
 		$asociado->Email = $asociado_value['Email'];
 		return $this->insert_row($asociado);
 	}
@@ -360,11 +391,12 @@ Class Import_model extends CI_Model{
 		$asociado = new stdClass();
 		$asociado->id_Asociado = $asociado_value['id_Asociado'];
 		$asociado->Id_empresa = $idEmpresa;
-		$asociado->strNombre = $asociado_value['StrNombre'];
+		$asociado->strNombre = $asociado_value['strNombre'];
 		$asociado->TelefonoCasa = $asociado_value['TelefonoCasa'];
 		$asociado->TelefonoOficina = $asociado_value['TelefonoOficina'];
 		$asociado->Email = $asociado_value['Email'];
-		$asociado->FechaNacimiento = $asociado_value['FechaNacimiento'];
+		$fechaNacimiento = str_ireplace('/', '-', $asociado_value['FechaNacimiento']);
+		$asociado->FechaNacimiento = date('Y-m-d', strtotime($fechaNacimiento));
 		$asociado->Edad = $asociado_value['Edad'];
 		$asociado->id_Genero = $asociado_value['id_Genero'];
 		$asociado->id_Parentesco = $asociado_value['id_Parentesco'];
@@ -374,12 +406,13 @@ Class Import_model extends CI_Model{
 	public function add_asociado_hijo($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
 		$asociado->id_Asociado = $asociado_value['id_Asociado'];
-		$asociado->Id_empresa = $idEmpresa;
-		$asociado->strNombre = $asociado_value['StrNombre'];
+		$asociado->id_empresa = $idEmpresa;
+		$asociado->strNombre = $asociado_value['strNombre'];
 		$asociado->TelefonoCasa = $asociado_value['TelefonoCasa'];
 		$asociado->TelefonoOficina = $asociado_value['TelefonoOficina'];
 		$asociado->Email = $asociado_value['Email'];
-		$asociado->FechaNacimiento = $asociado_value['FechaNacimiento'];
+		$fechaNacimiento = str_ireplace('/', '-', $asociado_value['FechaNacimiento']);
+		$asociado->FechaNacimiento = date('Y-m-d', strtotime($fechaNacimiento));
 		$asociado->Edad = $asociado_value['Edad'];
 		$asociado->id_Genero = $asociado_value['id_Genero'];
 		return $this->insert_row($asociado);
@@ -387,7 +420,7 @@ Class Import_model extends CI_Model{
 
 	public function add_asociado_conyuge($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-		$asociado->Identificacion = $asociado_value['Identificacion'];
+		$asociado->identificacion = $asociado_value['identificacion'];
 		$asociado->Id_empresa = $idEmpresa;
 		$asociado->Identificacion_Conyuge = $asociado_value['Identificacion_Conyuge'];
 		$asociado->NombredelConyuge = $asociado_value['NombredelConyuge'];
@@ -395,46 +428,71 @@ Class Import_model extends CI_Model{
 		$asociado->TelefonoOficina_Conyuge = $asociado_value['TelefonoOficina_Conyuge'];
 		$asociado->OtroTelefono_Conyuge = $asociado_value['OtroTelefono_Conyuge'];
 		$asociado->Email_Conyuge = $asociado_value['Email_Conyuge'];
-		$asociado->FechaNacimiento_Conyugue = $asociado_value['FechaNacimiento_Conyugue'];
+		$fechaNacimiento = str_ireplace('/', '-', $asociado_value['FechaNacimiento_Conyugue']);
+		$asociado->FechaNacimiento_Conyugue = date('Y-m-d', strtotime($fechaNacimiento));
 		$asociado->Direccion_Conyuge = $asociado_value['Direccion_Conyuge'];
 		$asociado->Celular_Conyuge = $asociado_value['Celular_Conyuge'];
 		$asociado->id_Genero_Conyugue = $asociado_value['id_Genero_Conyugue'];
-		return $this->insert_row($asociado);
+		$this->insert_row($asociado);
+
+
+		$data = [];
+		$data['NombredelConyuge'] = $asociado_value['NombredelConyuge'];
+		$data['TelefonoCasa_Conyuge'] = $asociado_value['TelefonoCasa_Conyuge'];
+		$data['TelefonoCasa_Conyuge'] = $asociado_value['TelefonoCasa_Conyuge'];
+		$data['TelefonoOficina_Conyuge'] = $asociado_value['TelefonoOficina_Conyuge'];
+		$data['OtroTelefono_Conyuge'] = $asociado_value['OtroTelefono_Conyuge'];
+		$data['Email_Conyuge'] = $asociado_value['Email_Conyuge'];
+		$data['Direccion_Conyuge'] = $asociado_value['Direccion_Conyuge'];
+		$data['Celular_Conyuge'] = $asociado_value['Celular_Conyuge'];
+		$data['id_Genero_Conyugue'] = $asociado_value['id_Genero_Conyugue'];
+		$data['FechaNacimiento_Conyugue'] = date('Y-m-d', strtotime($fechaNacimiento));
+		$this->db->where('id_Asociado', $asociado_value['identificacion']);
+		$this->db->where('Id_Empresa', $idEmpresa);
+		$this->db->update('asociados', $data);
+
 	}
 	//TODO: no encuentro en la tabla asociados para actualizar
 	//TODO: esta informacion se puede manejar en la misma tabla asociados
 	public function add_asociados_motivo_retiro($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-		$asociado->Identificacion = $asociado_value['Identificacion'];
-		$asociado->Id_empresa = $idEmpresa;
-		$asociado->Identificacion_Conyuge = $asociado_value['Id_motivo_retiro'];
+		$asociado->identificacion = $asociado_value['identificacion'];
+		$asociado->id_empresa = $idEmpresa;
+		$asociado->id_motivo_retiro = $asociado_value['id_motivo_retiro'];
 		$this->insert_row($asociado);
+		$data = [];
+		$data['id_MotivoRetiro'] = $asociado_value['id_motivo_retiro'];
+		$data['id_EstadoactualEntidad'] = 2;
+		$this->db->where('id_Asociado', $asociado_value['identificacion']);
+		$this->db->where('Id_Empresa', $idEmpresa);
+		$this->db->update('asociados', $data);
+
+
 	}
 	//TODO: esta informacion se puede manejar en la misma tabla asociados
 	public function add_asociados_otros_datos($asociado_value, $idEmpresa) {
 		$asociado = new stdClass();
-		$asociado->Identificacion = $asociado_value['Identificacion'];
-		$asociado->Id_empresa = $idEmpresa;
-		$asociado->Id_conocimiento_cooperativismo = $asociado_value['Id_conocimiento_cooperativismo'];
-		$asociado->Id_GrupoFamiliarid_grupo_familiar = $asociado_value['Id_GrupoFamiliarid_grupo_familiar'];
-		$asociado->Id_oficina = $asociado_value['Id_oficina'];
+		$asociado->identificacion = $asociado_value['identificacion'];
+		$asociado->id_empresa = $idEmpresa;
+		$asociado->id_conocimiento_cooperativismo = $asociado_value['id_conocimiento_cooperativismo'];
+		$asociado->id_GrupoFamiliar = $asociado_value['id_GrupoFamiliar'];
 		$asociado->Ingresoreal = $asociado_value['Ingresoreal'];
 		$asociado->Celular_cliente = $asociado_value['Celular_cliente'];
-		$asociado->Id_ciudad_cliente = $asociado_value['Id_ciudad_cliente'];
-		$asociado->Td_pais_cliente = $asociado_value['Td_pais_cliente'];
-		$asociado->Telefono_oficina_cliente = $asociado_value['Telefono_oficina_cliente'];
+		$asociado->id_ciudad_cliente = $asociado_value['id_ciudad_cliente'];
+		$asociado->id_pais_cliente = $asociado_value['id_pais_cliente'];
+		$asociado->telefono_oficina_cliente = $asociado_value['telefono_oficina_cliente'];
 
 		$this->insert_row($asociado);
 
 		$data = [];
-		$data['Id_conocimiento_cooperativismo'] = $asociado_value['Id_conocimiento_cooperativismo'];
-		$data['Id_GrupoFamiliar'] = $asociado_value['Id_GrupoFamiliarid_grupo_familiar'];
-		$data['Id_oficina'] = $asociado_value['Id_oficina'];
+		$data['id_Conocimiento_Cooperativismo'] = $asociado_value['id_conocimiento_cooperativismo'];
+		$data['id_GrupoFamiliar'] = $asociado_value['id_GrupoFamiliar'];
 		$data['Ingresoreal'] = $asociado_value['Ingresoreal'];
 		$data['Celular_cliente'] = $asociado_value['Celular_cliente'];
-		$data['Ciudad_cliente'] = $asociado_value['Id_ciudad_cliente'];
-		$data['Pais_cliente'] = $asociado_value['Td_pais_cliente'];
-		$this->db->where('Identificacion', $asociado_value['Identificacion']);
+		$data['ciudad_cliente'] = $asociado_value['id_ciudad_cliente'];
+		$data['Pais_Cliente'] = $asociado_value['id_pais_cliente'];
+		$data['TelefonoOficina'] = $asociado_value['telefono_oficina_cliente'];
+		$this->db->where('id_Asociado', $asociado_value['identificacion']);
 		$this->db->where('Id_Empresa', $idEmpresa);
 		$this->db->update('asociados', $data);
 	}
@@ -505,7 +563,7 @@ Class Import_model extends CI_Model{
 	        $tasa->Id_empresa = $idEmpresa;
 	        $tasa->Mes = $tasa_value['Mes'];
 	        $tasa->Ano = $tasa_value['Ano'];
-	        if ($this->get_productoId($idEmpresa,'',$tasa_value['Id_Producto'])) {
+	        if ($this->get_productoId('tasa', $idEmpresa,'',$tasa_value['Id_Producto'])) {
 	            $tasa->Id_Producto = $tasa_value['Id_Producto'];
 	            $this->insert_row($tasa);
 	        }

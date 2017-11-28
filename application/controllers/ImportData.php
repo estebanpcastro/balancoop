@@ -18,6 +18,12 @@ Class ImportData extends CI_Controller{
 
   function __construct() {
     parent::__construct();
+
+    //Si no ha iniciado sesión o es usuario responsable
+    if(!$this->session->userdata('id_usuario') || $this->session->userdata('tipo') == '2'){
+        //Se cierra la sesion obligatoriamente
+        redirect('inicio/cerrar_sesion');
+    }//Fin if
     $this->load->helper('form');
     $this->load->helper('url');
     $this->load->helper('security');
@@ -47,7 +53,13 @@ Class ImportData extends CI_Controller{
   }
 
   function index() {
-      $this->load->view('csvindex');
+      // Se establece el titulo de la pagina.
+      $this->data['titulo'] = 'Importacion de información hacia balancoop';
+      // Se carga la pagina del formulario
+      $this->data['contenido_principal'] = 'importacion/cargar-datos-para-balancoop';
+
+      //Se carga la plantilla con las demas variables.
+      $this->load->view('plantillas/template', $this->data);
 
   }
 
@@ -60,8 +72,9 @@ Class ImportData extends CI_Controller{
           $categoria = $this->input->post('category');
           if($categoria) {
             $rows = $this->csvimport->get_array($_FILES["file"]["tmp_name"], FALSE, TRUE, 3, ';');
-            $this->validateIfCleanTable($categoria, 5);
-            $this->importRows($rows, $categoria, 5);
+            $idEmpresa = 16;
+            $this->validateIfCleanTable($categoria, $idEmpresa);
+            $this->importRows($rows, $categoria, $idEmpresa);
             print json_encode(TRUE);
           }
 
@@ -80,6 +93,7 @@ Class ImportData extends CI_Controller{
 		'asociados_hijos',
 		'asociados_conyuge',
 		'asociados_motivo_retiro',
+  	    'asociados_otros_datos',
   	    'productos',
   	    'usuarios_sistema',
   	    'clave_transferencia'
@@ -106,7 +120,7 @@ Class ImportData extends CI_Controller{
   				$asociado = $this->import_model->add_asociado($row, $idEmpresa, $codigoAngecia = 20);
   				break;
   			case 'aportes':
-  				$newRow = $this->import_model->add_aporte($row, $idEmpresa, 2);
+  				$newRow = $this->import_model->add_aporte($row, $idEmpresa, 116);
   				break;
   			case 'asociados_habiles':
   				$newRow = $this->import_model->add_asociado_habil($row, $idEmpresa);
@@ -124,10 +138,10 @@ Class ImportData extends CI_Controller{
   				$newRow = $this->import_model->add_asociado_conyuge($row, $idEmpresa);
   				break;
   			case 'asociados_motivo_retiro':
-  				$newRow = $this->import_model->add_asociado_conyuge($row, $idEmpresa);
+  			    $newRow = $this->import_model->add_asociados_motivo_retiro($row, $idEmpresa);
   				break;
   			case 'asociados_otros_datos':
-  				$newRow = $this->import_model->add_asociados_motivo_retiro($row, $idEmpresa);
+  			    $newRow = $this->import_model->add_asociados_otros_datos($row, $idEmpresa);
   				break;
   			case 'directivos':
   				$newRow = $this->import_model->add_directivo($row, $idEmpresa);
@@ -145,10 +159,10 @@ Class ImportData extends CI_Controller{
   			    $newRow = $this->import_model->add_tasa_mercado($row, $idEmpresa);
   			    break;
   			case 'cliente_producto_credito':
-  			    $newRow = $this->import_model->add_cliente_producto_credito($row, $idEmpresa, 10, 2017, 'P-Test01', '1');
+  			    $newRow = $this->import_model->add_cliente_producto_credito($row, $idEmpresa, 10, 2017, 116, '1');
   			    break;
   			case 'cliente_producto_captacion':
-  			    $newRow = $this->import_model->add_cliente_producto_captacion($row, $idEmpresa);
+  			    $newRow = $this->import_model->add_cliente_producto_captacion($row, $idEmpresa, 10, 2017, 116, 1);
   			    break;
   			case 'cliente_producto_social':
   			    $newRow = $this->import_model->add_cliente_producto_social($row, $idEmpresa);

@@ -1,17 +1,10 @@
-<html>
-<head>
-    <title>How to Import CSV Data into Mysql using Codeigniter</title>
-
- <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-
-</head>
-<body>
- <div class="container box">
-  <h3 align="center">How to Import CSV Data into Mysql using Codeigniter</h3>
-  <br />
-
+<div class="col-lg-12">
+    <!-- Contenedor del banner -->
+    <div class="col-lg-8">
+        <!-- Banner -->
+        <img src="<?php echo base_url().'img/cabezote_transferencia.png' ?>" class="img-responsive" alt="Transferencia solidaria"><!-- Banner -->
+    </div><!-- Contenedor del banner -->
+  <div class="col-lg-8">
   <form method="post" id="import_csv" enctype="multipart/form-data">
    <div class="form-group">
     <label>Select CSV File</label>
@@ -27,25 +20,26 @@
       <option value="clave_transferencia">Transferencia de cartera</option>
       <option value="tasa_mercado">Tasa de mercado</option>
       <option value="cliente_producto_credito">Clientes productos creditos</option>
-      <option value="clientes_productos_captacion">Clientes productos captación</option>
-      <option value="clientes_productos_captacion">Clientes productos sociales</option>
+      <option value="cliente_producto_captacion">Clientes productos captación</option>
+      <option value="cliente_producto_social">Clientes productos sociales</option>
       <option value="asociados_habiles">Asociados hábiles</option>
       <option value="asociados_beneficiarios">Asociados Beneficiaros</option>
       <option value="asociados_conocidos">Asociados conocidos</option>
       <option value="asociados_hijos">Asociados hijos</option>
       <option value="asociados_conyuge">Asociados conyugues</option>
       <option value="asociados_motivo_retiro">Asociados motivo de retiro</option>
+      <option value="asociados_otros_datos">Asociados Otros datos</option>
 
     </select>
    </div>
    <br />
    <button type="submit" name="import_csv" class="btn btn-info" id="import_csv_btn">Import CSV</button>
   </form>
+  </div>
   <br />
   <div id="imported_csv_data"></div>
- </div>
-</body>
-</html>
+</div>
+
 
 <script>
 $(document).ready(function(){
