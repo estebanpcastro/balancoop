@@ -33,25 +33,25 @@
                 <li class="dropdown">
                     <!-- Título del menú -->
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" style="color: white;">Administración <b class="caret"></b></a>
-                    
+
                     <!-- Opciones -->
                     <ul class="dropdown-menu">
                         <!-- Actualización -->
                         <!-- <li><a href="<?php // echo site_url('cliente/actualizados'); ?>">Actualización</a></li> -->
                         <!-- <li class="divider"></li> -->
-                        
+
                         <!-- Importar -->
                         <!-- <li><a href="<?php // echo site_url('importacion'); ?>">Importar</a></li> -->
 
                         <!-- Filtros -->
                         <li><a href="<?php echo site_url('filtros'); ?>">Filtros</a></li>
-                        
+
                         <!-- Listas -->
                         <li><a href="<?php echo site_url('listas'); ?>">Listas</a></li>
-                        
+
                         <!-- Listas -->
                         <li class="divider"></li>
-                        <li><a href="<?php echo site_url('inicio/mrm'); ?>">MRM</a></li>
+                        <li><a href="<?php echo site_url('import'); ?>">Importacion</a></li>
                         <!-- <li><a href="<?php // echo site_url('inicio/proyectos'); ?>">Proyectos</a></li> -->
 
                         <!-- Reporte de campañas -->
