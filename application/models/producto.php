@@ -14,7 +14,25 @@ Class Producto extends CI_Model{
 
     }
 
-    public function add_producto($producto_value, $idEmpresa, $idBalance, $categories, $idUsuario) {
+    public function borrar_dependencias($idFiltroProducto, $idProducto, $año) {
+        if(!empty($idFiltroProducto)) {
+            $conditionsDel = ['fuente' => (int) $idFiltroProducto['id_filtro']];
+            $this->db->delete('estructuras', $conditionsDel);
+            $this->db->delete('filtros_creados', ['intCodigo' => $idFiltroProducto['id_filtro']]);
+            $this->db->delete('filtros_creados_productos', ['id_producto' => $idProducto]);
+            $this->db->delete('productos', ['intCodigo' => $idProducto, 'ano' => $año]);
+        }
+    }
+
+    public function getFiltroProductoCreado($idProducto, $año) {
+        $this->db->select('intCodigo, id_filtro');
+        $this->db->from('filtros_creados_productos');
+        $this->db->where('id_producto', $idProducto);
+        $this->db->where('anio', $año);
+        return $this->db->get()->result_array();
+    }
+
+    public function add_producto($producto_value, $idEmpresa, $idBalance, $categories, $idUsuario, $año) {
         $producto = new stdClass();
         $producto->intCodigo = $producto_value['intCodigo'];
         $producto->strNombre = $producto_value['strNombre'];
@@ -36,6 +54,14 @@ Class Producto extends CI_Model{
         $producto->habilidad5_es = $producto_value['habilidad5_es'];
         $producto->habilidad5 = $producto_value['habilidad5'];
         $producto->habilidad6_es = $producto_value['habilidad6_es'];
+        $producto->ano = $año;
+        // borrar Filtros creados y filtros productos creados.
+        $filtrosCreados = $this->getFiltroProductoCreado($producto->intCodigo, $año);
+        if (!empty($filtrosCreados)) {
+            foreach ($filtrosCreados as $codigoFiltro) {
+                $this->borrar_dependencias($codigoFiltro, $producto->intCodigo, $año);
+            }
+        }
         $this->db->insert('productos', $producto);
         $idProducto = $this->db->insert_id();
         // Create filtros.
@@ -43,23 +69,34 @@ Class Producto extends CI_Model{
             1 => 'Hombres' ,
             2 => 'Mujeres'
         ];
-        foreach ($categories as $category) {
-            if (!empty($category)) {
-
-                foreach ($variablesNombres as $genero => $nombre) {
-                    $nombreEstructra = 'Asociados con el producto '.$producto->strNombre.'- '.$nombre;
-                    if ($idProducto) {
-                        $filtroCreado = $this->add_filtro($nombreEstructra, $idUsuario, $idEmpresa);
-                    }
-                    if ($filtroCreado) {
-                        $this->add_filtro_producto($filtroCreado, $idEmpresa, $producto->intCodigo, $genero);
-                        $this->catalogo_cuenta->add_estructura($nombreEstructra, $category['intCodigo'], 'V', $idBalance, 2, $filtroCreado);
-                    }
+        $codeCategory = $this->getCodeCategoriaByLinea($categories, $producto->id_linea);
+        if ($codeCategory > 0) {
+            foreach ($variablesNombres as $genero => $nombre) {
+                $nombreEstructra = 'Asociados con el producto '.$producto->strNombre.'- '.$nombre;
+                if ($idProducto) {
+                    $filtroCreado = $this->add_filtro($nombreEstructra, $idUsuario, $idEmpresa);
+                }
+                if (isset($filtroCreado) && $filtroCreado) {
+                    $this->add_filtro_producto($filtroCreado, $idEmpresa, $producto->intCodigo, $genero, $año);
+                    $this->catalogo_cuenta->add_estructura($nombreEstructra, $codeCategory, 'V', $idBalance, 2, 0, $filtroCreado);
                 }
             }
         }
 
 
+    }
+
+    public function getCodeCategoriaByLinea($categorias, $idLinea) {
+        foreach ($categorias as $categoria) {
+            if ($idLinea == 1 && array_key_exists('strNombre', $categoria) && $categoria['strNombre'] == '5. UTILIZACION DE SERVICIOS FINANCIEROS') {
+                return $categoria['intCodigo'];
+            }
+
+            if ($idLinea == 2 && array_key_exists('strNombre', $categoria) && $categoria['strNombre'] == '6. UTILIZACION DE SERVICIOS DE AREA SOCIAL (NO FINANCIEROS)') {
+                return $categoria['intCodigo'];
+            }
+        }
+        return 0;
     }
 
     public function add_filtro($nombre, $idUsuario, $idEmpresa) {
@@ -81,14 +118,14 @@ Class Producto extends CI_Model{
         return $id_filtro;
     }
 
-    public function add_filtro_producto($filtroCreado, $idEmpresa, $idProducto, $idGenero) {
+    public function add_filtro_producto($filtroCreado, $idEmpresa, $idProducto, $idGenero, $año) {
         $filtro = new stdClass();
         $filtro->id_filtro = $filtroCreado;
         $filtro->contiene = 1;
         $filtro->id_producto = $idProducto;
         $filtro->id_genero = $idGenero;
         $filtro->id_empresa = $idEmpresa;
-        $filtro->anio = 0;
+        $filtro->anio = $año;
         return $this->db->insert('filtros_creados_productos', $filtro);
     }
 

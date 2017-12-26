@@ -73,6 +73,7 @@
       <div class="col-lg-5">
         <button type="submit" name="import_csv"
           class="btn btn-success btn-block btn-xs" id="import_csv_btn">Importar</button>
+         <p class="hide red mesagge_response"></p>
       </div>
     </form>
     <br />
@@ -83,7 +84,7 @@
 
 <script>
 $(document).ready(function(){
-	var selected = ["cliente_producto_credito", "cliente_producto_captacion", "cliente_producto_social", "catalogo_cuentas"];
+	var selected = ["productos", "cliente_producto_credito", "cliente_producto_captacion", "catalogo_cuentas"];
     $("#categoria").change(function(){
     	var categoria = $('#categoria').val();
         if(selected.indexOf(categoria) >= 0) {
@@ -100,11 +101,11 @@ $(document).ready(function(){
   formData.append('file', $('#csv_file').prop('files')[0]);
   var category = $('#categoria').val();
   formData.append('category', category);
-
+  $('.mesagge_response').addClass('hide');
 
   if(selected.indexOf(category) >= 0) {
-    formData.append('mes', $('#select_anio').val());
-    formData.append('anio', $('#select_mes').val());
+    formData.append('mes', $('#select_mes').val());
+    formData.append('anio', $('#select_anio').val());
   }
 
   $.ajax({
@@ -121,11 +122,30 @@ $(document).ready(function(){
    success:function(data)
    {
      console.log(data);
+     if (data == 'false') {
+       $('.mesagge_response').addClass('text-warning');
+       $('.mesagge_response').text('Ha ocurrido un error por favor revise el formato y las cabeceras del archivo');
 
+     } else {
+       $('.mesagge_response').text('Importación completa');
+       $('.mesagge_response').addClass('text-success');
+     }
+     $('.mesagge_response').removeClass('hide');
+     $('#import_csv_btn').html('Importar');
      $('#import_csv')[0].reset();
      $('#import_csv_btn').attr('disabled', false);
-     $('#import_csv_btn').html('Importación completa');
      $('.fecha').addClass('hide');
+   },
+   error: function(response) {
+	 var categorias = ["cliente_producto_credito", "cliente_producto_captacion", "cliente_producto_social"];
+     if (response.status == 504 && categorias.indexOf(category) >= 0) {
+    	 $('#import_csv')[0].reset();
+         $('#import_csv_btn').attr('disabled', false);
+         $('.mesagge_response').addClass('text-warning');
+         $('.mesagge_response').html('El archivo cargado correctamente, los datos se subiran en segundo plano');
+         $('.fecha').addClass('hide');
+         $('.mesagge_response').removeClass('hide');
+     }
    }
   })
  });

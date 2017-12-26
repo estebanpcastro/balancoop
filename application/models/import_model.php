@@ -2,12 +2,11 @@
 /**
  * Modelo encargado de gestionar toda la informacion relacionada al cliente
  *
- * @author 		       John Arley Cano Salinas
- * @author 		       Oscar Humberto Morales
+ * @author 		       Esteban Palomino
  */
 Class Import_model extends CI_Model{
 
-	protected $tablaDB;
+	public $tablaDB;
 
 	public function __construct()
 	{
@@ -66,17 +65,19 @@ Class Import_model extends CI_Model{
 		return $this->db->query($query);
 	}
 
-	public function get_productoId($tipo, $idEmpresa, $conditionText = '', $codigo = 0) {
+	public function get_productoId($tipo, $idEmpresa, $año, $conditionText = '', $codigo = 0) {
 	    $this->db->select('intCodigo');
 	    $this->db->from('productos');
 	    $this->db->where('Id_Empresa', $idEmpresa);
 	    if (!empty($conditionText)) {
 	        $this->db->where('strNombre', $conditionText);
+
 	    }
 
 	    if ($codigo) {
 	        $this->db->like('intCodigo', $codigo);
 	    }
+
 	    return $this->db->limit(1)->get()->row_array();
 	}
 
@@ -104,8 +105,7 @@ Class Import_model extends CI_Model{
 			$directivo->PeriodoVigencia = $directivo_value['PeriodoVigencia'];
 			$directivo->Parentescos = $directivo_value['Parentescos'];
 			$directivo->Vinculadas = $directivo_value['Vinculadas'];
-			$response = $this->insert_row($directivo);
-            var_dump($response);
+			$this->insert_row($directivo);
 			// Se busca que si esta en la tabla asociados por el id.
 			$conditionsUpdate = [];
 			$tipoDirectivoJunta = [2, 10, 12];
@@ -175,19 +175,20 @@ Class Import_model extends CI_Model{
 	}
 
 	public function add_tasa_mercado($tasa_value, $idEmpresa) {
-
 	    $this->db->select('*');
 	    $this->db->from($this->tablaDB);
 	    $this->db->where('Mes', $tasa_value['Mes']);
 	    $this->db->where('Ano', $tasa_value['Ano']);
-	    $this->db->where('Id_empresa', $idEmpresa);
+	    $this->db->where('id_empresa', $idEmpresa);
+	    $this->db->where('Id_Producto', $tasa_value['Id_Producto']);
 	    if ($this->db->count_all_results() == 0) {
 	        $tasa = new stdClass();
 	        $tasa->Tasa = str_replace(',', '.', $tasa_value['Tasa']);
 	        $tasa->Id_empresa = $idEmpresa;
 	        $tasa->Mes = $tasa_value['Mes'];
 	        $tasa->Ano = $tasa_value['Ano'];
-	        if ($this->get_productoId('tasa', $idEmpresa,'',$tasa_value['Id_Producto'])) {
+	        $producto = $this->get_productoId('tasa', $idEmpresa,'',$tasa_value['Id_Producto']);
+	        if ($producto > 0) {
 	            $tasa->Id_Producto = $tasa_value['Id_Producto'];
 	            $this->insert_row($tasa);
 	        }

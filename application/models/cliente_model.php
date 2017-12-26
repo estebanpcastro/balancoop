@@ -1,7 +1,7 @@
 <?php
 /**
  * Modelo encargado de gestionar toda la informacion relacionada al cliente
- * 
+ *
  * @author 		       John Arley Cano Salinas
  * @author 		       Oscar Humberto Morales
  */
@@ -101,14 +101,14 @@ Class Cliente_model extends CI_Model{
             case 'actualizacion_campos_empresa':
                 //Si se borran los campos de esa empresa
                 if($this->db->delete('actualizacion_campos_empresa', array('id_empresa' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
             case 'beneficiarios':
                 //Si se borran los beneficiarios asociados al usuario
                 if($this->db->delete('asociados_beneficiarios', array('id_Asociado' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -116,7 +116,7 @@ Class Cliente_model extends CI_Model{
             case 'campana':
                 //Si se borran las campañas asociadas al usuario
                 if($this->db->delete('clientes_campanas', array('intCodigo' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -124,7 +124,7 @@ Class Cliente_model extends CI_Model{
             case 'cargos':
                 //Si se borran los cargos asociados al usuario
                 if($this->db->delete('asociados_cargos', array('id_Asociado' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -132,7 +132,7 @@ Class Cliente_model extends CI_Model{
             case 'conocidos':
                 //Si se borran los conocidos asociados al usuario
                 if($this->db->delete('asociados_conocidos', array('id_Asociado' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -140,7 +140,7 @@ Class Cliente_model extends CI_Model{
             case 'comentario':
                 //Si se borran el comentario
                 if($this->db->delete('cliente_comentarios', array('intCodigo' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -148,7 +148,7 @@ Class Cliente_model extends CI_Model{
             case 'gustos':
                 //Si se borran los gustos asociados al usuario
                 if($this->db->delete('asociados_gustos', array('int_IdAsociado' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -156,7 +156,7 @@ Class Cliente_model extends CI_Model{
             case 'hijos':
                 //Si se borran los gustos asociados al usuario
                 if($this->db->delete('asociados_hijos', array('id_Asociado' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -164,7 +164,7 @@ Class Cliente_model extends CI_Model{
             case 'oportunidad':
                 //Si se borran el comentario
                 if($this->db->delete('oportunidad_x_cliente', array('intCodigo' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -172,7 +172,7 @@ Class Cliente_model extends CI_Model{
             case 'producto':
                 //Si se borran el comentario
                 if($this->db->delete('clientes_productos', array('intCodigo' => $id_asociado))){
-                    //Se retorna true           
+                    //Se retorna true
                     return true;
                 }
                 break;
@@ -185,7 +185,7 @@ Class Cliente_model extends CI_Model{
      * @return [type]            [description]
      */
     function buscar($documento, $id_empresa){
-        $sql = 
+        $sql =
         "SELECT
         *
         FROM
@@ -197,8 +197,8 @@ Class Cliente_model extends CI_Model{
 
         if(count($resultado) < 1){
             $documento = str_pad($documento, 12 , "0", STR_PAD_LEFT);
-            
-            $sql = 
+
+            $sql =
             "SELECT
             *
             FROM
@@ -209,7 +209,7 @@ Class Cliente_model extends CI_Model{
             $resultado = $this->db->query($sql)->row();
         }
 
-        return $resultado;  
+        return $resultado;
     } // buscar
 
     /**
@@ -257,11 +257,13 @@ Class Cliente_model extends CI_Model{
      * Carga de asociados que tienen clave configurada
      */
     function cargar_asociados_con_clave(){
-        $this->db->select('*');
-        $this->db->where('Clave_Transferencia IS NOT NULL', null);
+        $idEmpresa = $this->session->userdata('id_empresa');
+        $this->db->select('Nombre, PrimerApellido, SegundoApellido, Fecha_Cambio_Clave');
+        $this->db->from('asociados');
+        $this->db->where('Clave_Transferencia IS NOT NULL');
         $this->db->where('Clave_Transferencia !=', "");
-
-        return $this->db->get('asociados')->result();
+        $this->db->where('id_Empresa', $idEmpresa);
+        return $this->db->get()->result();
     } //cargar_hijos
 
     /**
@@ -443,7 +445,7 @@ Class Cliente_model extends CI_Model{
         oportunidad_x_cliente.id_cliente = '{$documento}'
         AND usuarios_sistema.id_empresa = '{$this->session->userdata('id_empresa')}'
         {$activos}";
-        
+
         return $this->db->query($sql)->result();
     } // cargar_oportunidades_cliente
 
@@ -544,7 +546,7 @@ Class Cliente_model extends CI_Model{
                 DATE_SUB('{$fecha_inicio}',INTERVAL 1 YEAR) AS Fecha_Requerida
                 FROM
                 asociados
-                WHERE 
+                WHERE
                 Identificacion = '{$id_asociado}'
                 AND id_Empresa = '{$this->session->userdata('id_empresa')}'";
 
@@ -613,7 +615,7 @@ Class Cliente_model extends CI_Model{
                     return array('aplica' => '0', 'Salario_Requerido' => number_format($resultado->Salario_Requerido, 0, '', '.'), 'Compras' => number_format($resultado->Compras, 0, '', '.'));
                 }
             break;
-            
+
             case '4':
                 $sql_ =
                 "SELECT
@@ -634,7 +636,7 @@ Class Cliente_model extends CI_Model{
                 WHERE
                 Identificacion = '{$id_asociado}'";
 
-                $sql = 
+                $sql =
                 "SELECT
                 (SELECT
                 salario_minimo.valor*(SELECT
@@ -709,8 +711,8 @@ Class Cliente_model extends CI_Model{
                 clientes_productos.id_cliente = '{$id_asociado}' AND
                 clientes_productos.id_empresa = '{$this->session->userdata('id_empresa')}' AND
                 CONCAT(
-                    clientes_productos.ano, '-', 
-                    CONCAT(REPEAT('0', 2-LENGTH(clientes_productos.mes)), clientes_productos.mes), '-', 
+                    clientes_productos.ano, '-',
+                    CONCAT(REPEAT('0', 2-LENGTH(clientes_productos.mes)), clientes_productos.mes), '-',
                     CONCAT(REPEAT('0', 2-LENGTH(clientes_productos.dia)), clientes_productos.dia)
                 ) >= '".date($anio."-m-d")."'";
 
@@ -1063,7 +1065,7 @@ Class Cliente_model extends CI_Model{
         if($anio == '0'){ $es_anio = ''; }
 
         // Consulta
-        $sql = 
+        $sql =
         "SELECT
             CONCAT(Nombre, ' ', PrimerApellido,  ' ', SegundoApellido) AS Nombres,
             a.Identificacion,
@@ -1076,7 +1078,7 @@ Class Cliente_model extends CI_Model{
         WHERE
             a.id_Asociado IS NOT NULL AND
             a.Actualizado = '1' AND
-            a.id_EstadoactualEntidad = '1' 
+            a.id_EstadoactualEntidad = '1'
             {$es_mes}
             {$es_anio}
             {$es_oficina}
@@ -1091,7 +1093,7 @@ Class Cliente_model extends CI_Model{
      * @param  [type] $id_usuario [description]
      * @return [type]             [description]
      */
-    function listar_usuarios_sistema($id_usuario){       
+    function listar_usuarios_sistema($id_usuario){
         //Se realiza la consulta
         $this->db->select('*');
         $this->db->order_by('strNombre');
@@ -1110,7 +1112,7 @@ Class Cliente_model extends CI_Model{
      * @param  [type] $id_usuario [description]
      * @return [type]             [description]
      */
-    function listar_usuarios_sistema_empresa(){       
+    function listar_usuarios_sistema_empresa(){
         //Se realiza la consulta
         $this->db->select('*');
         $this->db->order_by('strNombre');
@@ -1161,7 +1163,7 @@ Class Cliente_model extends CI_Model{
         //Se realiza la consulta
         $this->db->where('login', $nombre_usuario);
         $query = $this->db->get('usuarios_sistema');
-        
+
         //Si devuelve una celda
         if($query->num_rows() == 1){
             //El usuario existe. Retorna verdadero
@@ -1183,7 +1185,7 @@ Class Cliente_model extends CI_Model{
         AND Identificacion <> '{$identificacion}'";
 
         $resultado = $this->db->query($sql)->result();
-        
+
         //Si devuelve una celda
         if(count($resultado) > 0){
             //El usuario existe. Retorna verdadero

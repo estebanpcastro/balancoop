@@ -1,4 +1,4 @@
-<?php 
+<?php
  ?>
 <!-- Si el usuario es responsable, no puede crear listas, en caso que quiera entrar forzadamente por la URL -->
 <?php if($this->session->userdata('tipo') != '2'){ ?>
@@ -10,17 +10,17 @@
                 <button id="btn_empresas" type="button" class="btn btn-default">Empresas</button>
                 <button id="btn_listas_desplegables" type="button" class="btn btn-default">Listas desplegables</button>
             <?php } ?>
-            
-            <button id="btn_encuestas" type="button" class="btn btn-default">Encuestas</button>
+
+<!--             <button id="btn_encuestas" type="button" class="btn btn-default">Encuestas</button> -->
             <button id="btn_oficinas" type="button" class="btn btn-default">Oficinas</button>
-            <button id="btn_preguntas" type="button" class="btn btn-default">Preguntas</button>
+<!--             <button id="btn_preguntas" type="button" class="btn btn-default">Preguntas</button> -->
             <button id="btn_proveedores" type="button" class="btn btn-default">Proveedores</button>
             <button id="btn_productos" type="button" class="btn btn-default">Productos</button>
             <button id="btn_regiones" type="button" class="btn btn-default">Regiones</button>
             <button id="btn_usuarios" type="button" class="btn btn-default">Usuarios</button>
             <button id="btn_claves" type="button" class="btn btn-default">Contraseñas de asociados</button>
         </div>
-    <center> 
+    <center>
     <p></p>
 <?php } ?>
 

@@ -85,6 +85,7 @@ Class Asociado extends CI_Model{
             $data['Direccion_Conyuge'] = $asociado_value['Direccion_Conyuge'];
             $data['Celular_Conyuge'] = $asociado_value['Celular_Conyuge'];
             $data['id_Genero_Conyugue'] = $asociado_value['id_Genero_Conyugue'];
+            $data['Identificacion_Conyuge'] = $asociado_value['Identificacion_Conyuge'];
             $data['FechaNacimiento_Conyugue'] = date('Y-m-d', strtotime($fechaNacimiento));
             $this->db->where('id_Asociado', $idEmpresa.'-'.$asociado_value['identificacion']);
             $this->db->where('Id_Empresa', $idEmpresa);
@@ -192,7 +193,10 @@ Class Asociado extends CI_Model{
             $asociado['FechaCreacion'] = date('Y/m/d');
             $asociado['id_Empresa'] = $idEmpresa;
             $asociado['id_Oficina'] = $codigoAgencia;
-            $this->import_model->insert_row($asociado);
+            if (!$this->import_model->get_asociado($asociado['Identificacion'], $idEmpresa)) {
+                $this->import_model->insert_row($asociado);
+            }
+
         }
         return false;
     }

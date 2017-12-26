@@ -25,7 +25,7 @@ Class Import extends CI_Controller{
             redirect('inicio/cerrar_sesion');
         }
         $this->load->model(array('import_model','catalogo_cuenta', 'producto', 'cliente_producto', 'asociado'));
-        $this->load->library('csvimport');
+        $this->load->library(array('csvimport'));
     }
 
     function import_oracle($tablaDb, $idEmpresa = 0) {
@@ -68,13 +68,113 @@ Class Import extends CI_Controller{
         else{
             $categoria = $this->input->post('category');
             if($categoria) {
-                $rows = $this->csvimport->get_array($_FILES["file"]["tmp_name"], FALSE, TRUE, 3, ';');
                 $idEmpresa = $this->session->userdata('id_empresa');
-                $this->validateIfCleanTable($categoria, $idEmpresa);
-                $this->importRows($rows, $categoria, $idEmpresa);
-                print json_encode(TRUE);
+                $mes = $this->input->post('mes');
+                $ano = $this->input->post('anio');
+                $codigoAgencia = $this->session->userdata('codigo_agencia');
+                $idUsuario = $this->session->userdata('id_usuario');
+                $tablasPesadas = ['aportes', 'cliente_producto_credito', 'cliente_producto_captacion', 'cliente_producto_social'];
+                if (in_array($categoria, $tablasPesadas)) {
+                    $responseImport = $this->importCsvHuge($_FILES["file"]["tmp_name"], $categoria, $idEmpresa, $codigoAgencia, $idUsuario, $mes, $ano);
+                    if ($responseImport) {
+                        print json_encode(TRUE);
+                    }
+                    else {
+                        print json_encode(FALSE);
+                    }
+
+                }
+                else {
+                    $rows = $this->csvimport->get_array($_FILES["file"]["tmp_name"], FALSE, TRUE, 3, ';');
+                    $this->validateIfCleanTable($categoria, $idEmpresa);
+                    $this->importRows($rows, $categoria, $idEmpresa, $codigoAgencia, $idUsuario, $ano, $mes);
+                    print json_encode(TRUE);
+                }
+
             }
         }
+    }
+
+    protected function importCsvHuge($file, $tablaDb, $idEmpresa, $codigoAgencia, $idUsuario, $mes, $ano) {
+        $initalLine = 3;
+        $columnHeaders = FALSE;
+        $this->csvimport->initialze_conection($file, $columnHeaders, TRUE, $initalLine, ';');
+        // Open the CSV for reading.
+        $handle = $this->csvimport->get_handle();
+
+        $row = 0;
+        $clienteCreados = [];
+        if ($tablaDb == 'aportes') {
+            $productoAporte = $this->import_model->get_productoId('aportes', $idEmpresa, 'APORTES');
+        }
+        while (($data = fgetcsv($handle, 0, $this->csvimport->_get_delimiter())) !== FALSE)
+        {
+            if ($data[0] != NULL)
+            {
+                if($row < $initalLine)
+                {
+                    $row++;
+                    continue;
+                }
+                // If first row, parse for column_headers
+                if($row == $initalLine)
+                {
+                    // If column_headers already provided, use them
+                    if($columnHeaders)
+                    {
+                        foreach ($columnHeaders as $key => $value)
+                        {
+                            $columnHeaders[$key] = trim($value);
+                        }
+                    }
+                    else // Parse first row for column_headers to use
+                    {
+                        foreach ($data as $key => $value)
+                        {
+                            $key_value = str_replace(' ', '_', $value);
+                            $key_final = $this->csvimport->eliminar_tildes($key_value);
+                            $columnHeaders[$key] = trim($key_final);
+                        }
+                    }
+                }
+                else
+                {   $result = [];
+                    foreach($columnHeaders as $key => $value) // assumes there are as many columns as their are title columns
+                    {
+                        if (array_key_exists($key, $data)) {
+                            $result[$value] = utf8_encode(trim($data[$key]));
+                        }
+
+                    }
+                    switch ($tablaDb) {
+                        case 'aportes':
+                            if (!empty($productoAporte)) {
+                                $clienteCreados = $this->cliente_producto->add_aporte($clienteCreados, $result, $idEmpresa, $codigoAgencia, $productoAporte, $idUsuario);
+                            }
+                            break;
+                        case 'cliente_producto_credito':
+                            $clienteCreados = $this->cliente_producto->add_cliente_producto_credito($clienteCreados, $result, $idEmpresa, $mes, $ano, $codigoAgencia, $idUsuario);
+                            break;
+                        case 'cliente_producto_captacion':
+                            $clienteCreados = $this->cliente_producto->add_cliente_producto_captacion($clienteCreados, $result, $idEmpresa, $mes, $ano, $codigoAgencia, $idUsuario);
+                            break;
+                        case 'cliente_producto_social':
+                            $clienteCreados = $this->cliente_producto->add_cliente_producto_social($clienteCreados, $result, $idEmpresa, $codigoAgencia, $idUsuario);
+                            break;
+                        default:
+                            null;
+                            break;
+                    }
+                    if (!is_array($clienteCreados)) {
+                        return FALSE;
+                    }
+                }
+                unset($data);
+                $row++;
+            }
+        }
+        return TRUE;
+        $this->csvimport->_close_csv();
     }
 
     protected function validateIfCleanTable($tablaDb, $idEmpresa) {
@@ -87,12 +187,9 @@ Class Import extends CI_Controller{
             'asociados_conyuge',
             'asociados_motivo_retiro',
             'asociados_otros_datos',
-            'productos',
             'directivos',
             'usuarios_sistema',
             'clave_transferencia',
-            'filtros_creados',
-            'filtros_creados_productos',
         ];
         // Borrar data de las tablas por id_empresa
         if (in_array($tablaDb, $tablesToDelete) && $idEmpresa) {
@@ -102,38 +199,28 @@ Class Import extends CI_Controller{
     }
 
 
-    protected function importRows($rows, $tablaDb, $idEmpresa) {
+    protected function importRows($rows, $tablaDb, $idEmpresa, $codigoAgencia, $idUsuario, $ano, $mes) {
         if ($tablaDb == 'catalogo_cuentas' && $rows) {
-            $balance = $this->import_model->get_balance_id($idEmpresa, 2017);
+            $balance = $this->import_model->get_balance_id($idEmpresa, $ano);
             if (!empty($balance)) {
-                $this->catalogo_cuenta->validate_situacion_finaciera_exist($balance['id_balance']);
-                $dimensiones = $this->catalogo_cuenta->get_codes_by_dimension($balance['id_balance'], 2017);
+                $this->catalogo_cuenta->validate_situacion_finaciera_exist($balance['id_balance'], $mes, '3. SITUACION FINANCIERA');
+                $dimensiones = $this->catalogo_cuenta->get_codes_by_dimension($balance['id_balance']);
             }
         }
 
         if ($tablaDb == 'productos' && $rows) {
-            $conditionsDel = ['id_empresa' => $idEmpresa];
-            $this->db->delete('filtros_creados', $conditionsDel);
-            $this->db->delete('filtros_creados_productos', $conditionsDel);
-            $balance = $this->import_model->get_balance_id($idEmpresa, 2017);
+            $balance = $this->import_model->get_balance_id($idEmpresa, $ano);
             if (!empty($balance)) {
                 $estructurasProductos = [];
                 $estructurasProductos[] = $this->catalogo_cuenta->getEstructura($balance['id_balance'], '5. UTILIZACION DE SERVICIOS FINANCIEROS', 'D');
-                $estructurasProductos[] = $this->catalogo_cuenta->getEstructura($balance['id_balance'], ' 6. UTILIZACION DE SERVICIOS DE AREA SOCIAL (NO FINANCIEROS)', 'D');
+                $estructurasProductos[] = $this->catalogo_cuenta->getEstructura($balance['id_balance'], '6. UTILIZACION DE SERVICIOS DE AREA SOCIAL (NO FINANCIEROS)', 'D');
             }
         }
 
-        $codigoAgencia = $this->session->userdata('codigo_agencia');
-        $idUsuario = $this->session->userdata('id_usuario');
-        $mes = $this->session->userdata('mes');
-        $ano = $this->session->userdata('anio');
-        foreach ($rows as $row) {
+        foreach ($rows as $key => $row) {
             switch ($tablaDb) {
                 case 'asociados':
                     $this->asociado->add_asociado($row, $idEmpresa, $codigoAgencia);
-                    break;
-                case 'aportes':
-                    $this->cliente_producto->add_aporte($row, $idEmpresa, $codigoAgencia, $idUsuario);
                     break;
                 case 'asociados_habiles':
                     $this->asociado->add_asociado_habil($row, $idEmpresa);
@@ -160,7 +247,9 @@ Class Import extends CI_Controller{
                     $this->import_model->add_directivo($row, $idEmpresa);
                     break;
                 case 'productos':
-                    $this->producto->add_producto($row, $idEmpresa, $balance['id_balance'], $estructurasProductos,$idUsuario);
+                    if (!empty($balance)) {
+                        $this->producto->add_producto($row, $idEmpresa, $balance['id_balance'], $estructurasProductos, $idUsuario, $ano);
+                    }
                     break;
                 case 'usuarios_sistema':
                     $this->import_model->add_usuario_sistema($row, $idEmpresa);
@@ -171,24 +260,16 @@ Class Import extends CI_Controller{
                 case 'tasa_mercado':
                     $this->import_model->add_tasa_mercado($row, $idEmpresa);
                     break;
-                case 'cliente_producto_credito':
-                    $this->cliente_producto->add_cliente_producto_credito($row, $idEmpresa, $mes, $ano, $codigoAgencia, $idUsuario);
-                    break;
-                case 'cliente_producto_captacion':
-                    $this->cliente_producto->add_cliente_producto_captacion($row, $idEmpresa, $mes, $ano, $codigoAgencia, $idUsuario);
-                    break;
-                case 'cliente_producto_social':
-                    $this->cliente_producto->add_cliente_producto_social($row, $idEmpresa, $codigoAgencia, $idUsuario);
-                    break;
                 case 'catalogo_cuentas':
                     if (!empty($dimensiones)) {
-                        $this->catalogo_cuenta->add_variables($row, $balance['id_balance'], $ano, $dimensiones);
+                        $this->catalogo_cuenta->add_variables($row, $balance['id_balance'], $mes, $ano, $dimensiones);
                     }
                     break;
                 default:
                     null;
                     break;
             }
+            unset($rows[$key]);
         }
     }
 

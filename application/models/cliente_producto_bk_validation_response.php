@@ -77,7 +77,7 @@ Class Cliente_producto extends CI_Model{
                     $clientesCreados,
                     'credito',
                     $asociado,
-                    $value['Saldo_de_capital'], // Valor_cuota_fija.
+                    $value['Valor_cuota_fija'],
                     $value['Tasa_de_interes_nominal_cobrada'],
                     $producto['intCodigo'],
                     $codigoAgencia,
@@ -187,16 +187,14 @@ Class Cliente_producto extends CI_Model{
         $clienteProducto->id_cliente = $asociado['Identificacion'];
         $tasaMercado = $this->import_model->get_tasa_mercado($codigoProducto, $ano, $mes, $asociado['id_Empresa']);
         if (!empty($tasaMercado)) {
-            $tasaInteres = str_replace(',', '.', $tasaInteres);
             $tasaMercadoValor = ($tasaMercado['Tasa'] / 12 / 100);
-            $tasaInteresValor = ( (float) $tasaInteres / 12 / 100);
-            $saldo = str_replace(',', '.', $saldo);
+            $tasaInteresValor = ($tasaInteres / 12 / 100);
             if ($tipo == 'captacion') {
-                $saldo = ($tasaInteresValor * (float) $saldo) - ($tasaMercadoValor * (float) $saldo);
-                $valor = ($tasaInteresValor * (float) $saldo);
+                $saldo = ($tasaInteresValor * $saldo) - ($tasaMercadoValor * $saldo);
+                $valor = ($tasaInteresValor * $saldo);
             }
             else if ($tipo == 'credito') {
-                $saldo = $tasaInteresValor > 0 ? ($tasaMercadoValor * (float) $saldo) - ($tasaInteresValor * (float) $saldo) : 0;
+                $saldo = $tasaInteresValor > 0 ? ($tasaMercadoValor * $saldo) / ($tasaInteresValor) : 0;
             }
         }
         $clienteProducto->transferencia = $saldo;

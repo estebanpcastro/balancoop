@@ -25,35 +25,32 @@ Class catalogo_cuenta extends CI_Model{
         ];
     }
 
-    public function validate_situacion_finaciera_exist($idBalance){
-        $situacionFinciera = $this->getEstructuras($idBalance, '3. SITUACION FINANCIERA');
+    public function validate_situacion_finaciera_exist($idBalance, $mes, $cuenta = '3. SITUACION FINANCIERA'){
+        $situacionFinciera = $this->getEstructuras($idBalance, $cuenta);
         foreach ($situacionFinciera as $estructura) {
             $id_categoria = $estructura['intCodigo'];
-
             //Se consultan y se recorren todas las dimensiones existentes de la categoría seleciconada
             foreach ($this->balance_model->cargar_dimensiones($id_categoria) as $dimension) {
                 // Se borran todas las structuras de esa dimensión
-                $this->balance_model->eliminar("structuras", $dimension->intCodigo);
-            }// foreach
-
+                $this->balance_model->eliminar("estructuras", $dimension->intCodigo);
+            }
             // Se eliminan las dimensiones de la categoria
-            $this->balance_model->eliminar("structuras", $id_categoria);
-
+            $this->balance_model->eliminar("estructuras", $id_categoria);
             // Por último, se elimina la categoría
             $this->balance_model->eliminar('categoria', $id_categoria);
         }
         //Crear de nuevo la estructura.
-        $this->create_situacion_finciera($idBalance);
+        $this->create_situacion_finciera($idBalance, $mes);
 
     }
 
-    private function create_situacion_finciera($idBalance){
+    private function create_situacion_finciera($idBalance, $mes){
         $strNombre = '3. SITUACION FINANCIERA';
-        $this->add_estructura($strNombre, 0, 'C', $idBalance, 1);
+        $this->add_estructura($strNombre, 0, 'C', $idBalance, 1, $mes);
         $situacionFinciera = $this->getEstructura($idBalance, $strNombre, 'C');
         if (!empty($situacionFinciera)) {
             foreach ($this->dimensionesSituacionFinanciera as $clave => $nombre) {
-                $this->add_estructura($nombre, $situacionFinciera['intCodigo'], 'D', $idBalance, 1);
+                $this->add_estructura($nombre, $situacionFinciera['intCodigo'], 'D', $idBalance, 1, $mes);
             }
         }
     }
@@ -68,8 +65,8 @@ Class catalogo_cuenta extends CI_Model{
         return $codigo;
     }
 
-    public function add_variables($row, $idBalance, $año, $dimensiones) {
-        if (!empty($idBalance)) {
+    public function add_variables($row, $idBalance, $mes, $año, $dimensiones) {
+        if (!empty($idBalance) && array_key_exists('CUENTA', $row)) {
             $firstDigitByCode = substr($row['CUENTA'], 0, 1);
             $nombre = $row['CUENTA'].' '.$row['DESCRIPCION_DE_LA_CUENTA'];
             switch ($firstDigitByCode) {
@@ -102,14 +99,13 @@ Class catalogo_cuenta extends CI_Model{
                     break;
             }
             if ($idConector > 0) {
-                $this->add_estructura($nombre, $idConector, 'V', $idBalance, 1, $row['Saldo']);
+                $this->add_estructura($nombre, $idConector, 'V', $idBalance, 1, $mes, 0,  $row['Saldo']);
             }
-
-
         }
     }
 
-    public function add_estructura($nombre, $codigo_conector, $tipo, $idBalance, $modo_ingreso, $idFiltro = 0, $saldo = 0) {
+    public function add_estructura($nombre, $codigo_conector, $tipo, $idBalance, $modo_ingreso, $mes, $idFiltro = 0, $saldo = 0) {
+
         $structura = new stdClass();
         $structura->strNombre = $nombre;
         $structura->tipo = $tipo;
@@ -121,7 +117,48 @@ Class catalogo_cuenta extends CI_Model{
         $structura->modo_ingreso_ = 1;
         $structura->id_variable_comparacion = 0;
         $structura->es_titulo = 0;
-        $structura->d_r = $saldo;
+        switch ($mes) {
+            case 1:
+                $structura->e_r = $saldo;
+            break;
+
+            case 2:
+                $structura->f_r = $saldo;
+                break;
+            case 3:
+                $structura->mr_r = $saldo;
+                break;
+            case 4:
+                $structura->a_r = $saldo;
+                break;
+            case 5:
+                $structura->m_r = $saldo;
+                break;
+            case 6:
+                $structura->j_r = $saldo;
+                break;
+            case 7:
+                $structura->jl_r = $saldo;
+                break;
+            case 8:
+                $structura->a_r = $saldo;
+                break;
+            case 9:
+                $structura->s_r = $saldo;
+                break;
+            case 10:
+                $structura->o_r = $saldo;
+                break;
+            case 11:
+                $structura->n_r = $saldo;
+                break;
+            case 12:
+                $structura->d_r = $saldo;
+                break;
+            default:
+               $saldo = 0;
+            break;
+        }
         return $this->balance_model->guardar($structura);
     }
 
@@ -143,7 +180,7 @@ Class catalogo_cuenta extends CI_Model{
         return $this->db->get()->result_array();
     }
 
-    public function get_codes_by_dimension($idBalance, $año){
+    public function get_codes_by_dimension($idBalance){
         $this->db->select('intCodigo, strNombre');
         $this->db->from('estructuras');
         $this->db->where('id_balance', $idBalance);

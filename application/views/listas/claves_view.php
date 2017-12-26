@@ -16,19 +16,23 @@
                 <th class="alinear_centro">Última modificación</th>
             </tr>
         </thead><!-- Cabecera -->
-        
+
         <!-- Cuerpo -->
         <tbody>
             <!-- Recorrido de los registros -->
-            <?php $cont = 1; foreach ($this->cliente_model->cargar_asociados_con_clave() as $asociado) { ?>
+            <?php $cont = 1; ?>
+
+            <?php $asociados = $this->cliente_model->cargar_asociados_con_clave(); ?>
+            <?php foreach ($asociados as $asociado) { ?>
+                <?php $fecha = ($asociado->Fecha_Cambio_Clave != null) ? date("Y-m-d", strtotime($asociado->Fecha_Cambio_Clave)) : date('Y-m-d');?>
                 <tr>
                     <td align="right"><?php echo $cont++; ?></td>
                     <td><?php echo "$asociado->Nombre $asociado->PrimerApellido $asociado->SegundoApellido"; ?></td>
-                    <td><?php echo date("Y-m-d", strtotime($asociado->Fecha_Cambio_Clave)); ?></td>
+                    <td><?php echo $fecha; ?></td>
                 </tr>
             <?php } // foreach ?>
 		</tbody><!-- Cuerpo -->
-    </tabla><!-- Tabla -->
+    </table><!-- Tabla -->
 </div><!-- Tabla responsiva -->
 
 <!-- Modal buscar asociado -->
@@ -56,7 +60,7 @@
                 			<button type="button" class="btn btn-info" id="btn_buscar">Buscar</button>
 						</div>
 						<div class="col-lg-3">
-							
+
 						</div>
 
                         <div class="clear"></div>
@@ -89,7 +93,7 @@
 
 <script type="text/javascript">
     /**
-     * 
+     *
      */
 	function cambiar_clave(){
         // Recolección de datos
@@ -135,7 +139,7 @@
         });
 	} // cambiar_clave
 
-	// Cuando el DOM esté listo   
+	// Cuando el DOM esté listo
 	$(document).ready(function(){
 		// Inicialización de la tabla
         $('#usuarios_claves').dataTable( {
@@ -156,9 +160,9 @@
 
         // Buscar cédula
         $("#btn_buscar").on("click", function(){
-        	// Se consulta la cédula 
+        	// Se consulta la cédula
             asociado = ajax("<?php echo site_url('cliente/buscar'); ?>", {'documento': $("#input_cedula").val(), 'id_empresa': "<?php echo $this->session->userdata('id_empresa'); ?>"}, 'json');
-            
+
             // Si no existe el asociado
             if (!asociado.id_Asociado) {
                 // Se desactiva el botón para guardar los cambios
@@ -174,7 +178,7 @@
             } else {
                 // Se pone el nombre del asociado
                 $("#nombre_asociado").text(asociado.Nombre + " " + asociado.PrimerApellido + " " + asociado.SegundoApellido);
-                
+
                 // Se muestra el formulario de contraseñas
                 $("#form_claves").show();
 
