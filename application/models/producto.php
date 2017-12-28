@@ -1,38 +1,55 @@
 <?php
+
 /**
  * Modelo encargado de gestionar toda la informacion relacionada al cliente
  *
  * @author 		       John Arley Cano Salinas
  * @author 		       Oscar Humberto Morales
  */
-Class Producto extends CI_Model{
+class Producto extends CI_Model
+{
 
     public function __construct()
     {
         $this->load->database();
-        $this->load->model(array('import_model', 'catalogo_cuenta'));
-
+        $this->load->model(array(
+            'import_model',
+            'catalogo_cuenta'
+        ));
     }
 
-    public function borrar_dependencias($idFiltroProducto, $idProducto, $año) {
-        if(!empty($idFiltroProducto)) {
-            $conditionsDel = ['fuente' => (int) $idFiltroProducto['id_filtro']];
+    public function borrar_dependencias($idFiltroProducto, $idProducto, $idBalance)
+    {
+        if (! empty($idFiltroProducto)) {
+            $conditionsDel = [
+                'fuente' => $idFiltroProducto['id_filtro'],
+                'id_balance' => $idBalance,
+            ];
             $this->db->delete('estructuras', $conditionsDel);
-            $this->db->delete('filtros_creados', ['intCodigo' => $idFiltroProducto['id_filtro']]);
-            $this->db->delete('filtros_creados_productos', ['id_producto' => $idProducto]);
-            $this->db->delete('productos', ['intCodigo' => $idProducto, 'ano' => $año]);
+            $this->db->delete('filtros_creados', [
+                'intCodigo' => $idFiltroProducto['id_filtro']
+            ]);
+            $this->db->delete('filtros_creados_productos', [
+                'id_producto' => $idProducto
+            ]);
+            $this->db->delete('productos', [
+                'intCodigo' => $idProducto,
+//                 'ano' => $año
+            ]);
         }
     }
 
-    public function getFiltroProductoCreado($idProducto, $año) {
+    public function getFiltroProductoCreado($idProducto)
+    {
         $this->db->select('intCodigo, id_filtro');
         $this->db->from('filtros_creados_productos');
         $this->db->where('id_producto', $idProducto);
-        $this->db->where('anio', $año);
+//         $this->db->where('anio', $año);
         return $this->db->get()->result_array();
     }
 
-    public function add_producto($producto_value, $idEmpresa, $idBalance, $categories, $idUsuario, $año) {
+    public function add_producto($producto_value, $idEmpresa, $idBalance, $categories, $idUsuario, $año)
+    {
         $producto = new stdClass();
         $producto->intCodigo = $producto_value['intCodigo'];
         $producto->strNombre = $producto_value['strNombre'];
@@ -54,39 +71,48 @@ Class Producto extends CI_Model{
         $producto->habilidad5_es = $producto_value['habilidad5_es'];
         $producto->habilidad5 = $producto_value['habilidad5'];
         $producto->habilidad6_es = $producto_value['habilidad6_es'];
-        $producto->ano = $año;
+//         $producto->ano = $año;
         // borrar Filtros creados y filtros productos creados.
-        $filtrosCreados = $this->getFiltroProductoCreado($producto->intCodigo, $año);
-        if (!empty($filtrosCreados)) {
-            foreach ($filtrosCreados as $codigoFiltro) {
-                $this->borrar_dependencias($codigoFiltro, $producto->intCodigo, $año);
-            }
+//         $filtrosCreados = $this->getFiltroProductoCreado($producto->intCodigo);
+//         if (! empty($filtrosCreados)) {
+//             foreach ($filtrosCreados as $codigoFiltro) {
+//                 $this->borrar_dependencias($codigoFiltro, $producto->intCodigo, $idBalance);
+//             }
+//         }
+        $productoExist = $this->import_model->get_productoId('credito', $idEmpresa, '', $producto_value['intCodigo']);
+        if (empty($productoExist)) {
+            $this->db->insert('productos', $producto);
+            $idProducto = $this->db->insert_id();
         }
-        $this->db->insert('productos', $producto);
-        $idProducto = $this->db->insert_id();
+
         // Create filtros.
         $variablesNombres = [
-            1 => 'Hombres' ,
+            1 => 'Hombres',
             2 => 'Mujeres'
         ];
         $codeCategory = $this->getCodeCategoriaByLinea($categories, $producto->id_linea);
         if ($codeCategory > 0) {
             foreach ($variablesNombres as $genero => $nombre) {
-                $nombreEstructra = 'Asociados con el producto '.$producto->strNombre.'- '.$nombre;
-                if ($idProducto) {
+                $nombreEstructra = 'Asociados con el producto ' . $producto->strNombre . '- ' . $nombre;
+                $filtroCreadoExist = $this->get_filtro_creado($nombreEstructra, $idUsuario, $idEmpresa);
+                if (empty($filtroCreadoExist)) {
                     $filtroCreado = $this->add_filtro($nombreEstructra, $idUsuario, $idEmpresa);
+                } else {
+                    $filtroCreado = $filtroCreadoExist['intCodigo'];
                 }
-                if (isset($filtroCreado) && $filtroCreado) {
-                    $this->add_filtro_producto($filtroCreado, $idEmpresa, $producto->intCodigo, $genero, $año);
+                if (empty($filtroCreadoExist)) {
+                    $this->add_filtro_producto($filtroCreado, $idEmpresa, $producto->intCodigo, $genero);
+                }
+                $estructura = $this->catalogo_cuenta->getEstructura($idBalance, $nombreEstructra, 'V');
+                if (empty($estructura)) {
                     $this->catalogo_cuenta->add_estructura($nombreEstructra, $codeCategory, 'V', $idBalance, 2, 0, $filtroCreado);
                 }
             }
         }
-
-
     }
 
-    public function getCodeCategoriaByLinea($categorias, $idLinea) {
+    public function getCodeCategoriaByLinea($categorias, $idLinea)
+    {
         foreach ($categorias as $categoria) {
             if ($idLinea == 1 && array_key_exists('strNombre', $categoria) && $categoria['strNombre'] == '5. UTILIZACION DE SERVICIOS FINANCIEROS') {
                 return $categoria['intCodigo'];
@@ -99,7 +125,8 @@ Class Producto extends CI_Model{
         return 0;
     }
 
-    public function add_filtro($nombre, $idUsuario, $idEmpresa) {
+    public function add_filtro($nombre, $idUsuario, $idEmpresa)
+    {
         $filtro = new stdClass();
         $filtro->strNombre = $nombre;
         $filtro->es_reporte = 0;
@@ -118,15 +145,25 @@ Class Producto extends CI_Model{
         return $id_filtro;
     }
 
-    public function add_filtro_producto($filtroCreado, $idEmpresa, $idProducto, $idGenero, $año) {
+    public function get_filtro_creado($strNombre, $idUsuario, $idEmpresa) {
+        $this->db->select('intCodigo');
+        $this->db->from('filtros_creados');
+        $this->db->where('id_empresa', $idEmpresa);
+        $this->db->where('id_usuario', $idUsuario);
+        $this->db->where('strNombre', $strNombre);
+        return $this->db->limit(1)
+        ->get()
+        ->row_array();
+    }
+
+    public function add_filtro_producto($filtroCreado, $idEmpresa, $idProducto, $idGenero)
+    {
         $filtro = new stdClass();
         $filtro->id_filtro = $filtroCreado;
         $filtro->contiene = 1;
         $filtro->id_producto = $idProducto;
         $filtro->id_genero = $idGenero;
         $filtro->id_empresa = $idEmpresa;
-        $filtro->anio = $año;
         return $this->db->insert('filtros_creados_productos', $filtro);
     }
-
 }

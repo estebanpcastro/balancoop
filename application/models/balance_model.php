@@ -1,50 +1,60 @@
 <?php
+
 /**
  * Modelo encargado de gestionar toda la informacion relacionada al balance social
  * 
  * @author 		       John Arley Cano Salinas
  * @author 		       Oscar Humberto Morales
  */
-Class Balance_model extends CI_Model{
-    function actualizar($datos, $id_variable){
+class Balance_model extends CI_Model
+{
+
+    function actualizar($datos, $id_variable)
+    {
         $this->db->where('intCodigo', $id_variable);
-        if($this->db->update('estructuras', $datos)){
-            //Retorna verdadero
+        if ($this->db->update('estructuras', $datos)) {
+            // Retorna verdadero
             return true;
         }
     }
 
-    function actualizar_peso($id, $datos){
+    function actualizar_peso($id, $datos)
+    {
         $this->db->where('intCodigo', $id);
-        if($this->db->update('estructuras', $datos)){
-            //Retorna verdadero
+        if ($this->db->update('estructuras', $datos)) {
+            // Retorna verdadero
             return true;
         }
     }
 
-    function borrar_valores_reales($id_balance, $datos){
+    function borrar_valores_reales($id_balance, $datos)
+    {
         $this->db->where('id_balance', $id_balance);
-
-        if($this->db->update('estructuras', $datos)){
-            //Retorna verdadero
+        
+        if ($this->db->update('estructuras', $datos)) {
+            // Retorna verdadero
             return 'true';
         }
     }
 
-    function cargar($tipo, $anio, $id_conector, $id_oficina){
-        //Id de oficina cuando se seleccionan todas
+    function cargar($tipo, $anio, $id_conector, $id_oficina)
+    {
+        // Id de oficina cuando se seleccionan todas
         $oficina = "";
-
-        //Si 
+        
+        // Si
         if ($id_oficina != "0") {
             $oficina = " AND balances.id_agencia = {$id_oficina} ";
         }
-
-        // Si tiene conector
-        if ($id_conector) { $conector = " AND estructuras.id_conector = {$id_conector}";}else{$conector = "";}
         
-        $sql =
-        "SELECT
+        // Si tiene conector
+        if ($id_conector) {
+            $conector = " AND estructuras.id_conector = {$id_conector}";
+        } else {
+            $conector = "";
+        }
+        
+        $sql = "SELECT
         *
         FROM
         balances
@@ -57,30 +67,41 @@ Class Balance_model extends CI_Model{
         {$conector}
         {$oficina}
         ORDER BY strNombre";
-
+        
         return $this->db->query($sql)->result();
     }
 
     /**
      * [cargar_estructuras description]
-     * @param  [type] $tipo        [description]
-     * @param  [type] $id_balance  [description]
-     * @param  [type] $id_conector [description]
-     * @param  [type] $id_oficina  [description]
-     * @return [type]              [description]
+     * 
+     * @param [type] $tipo
+     *            [description]
+     * @param [type] $id_balance
+     *            [description]
+     * @param [type] $id_conector
+     *            [description]
+     * @param [type] $id_oficina
+     *            [description]
+     * @return [type] [description]
      */
-    function cargar_estructuras($tipo, $id_balance, $id_conector, $id_oficina){
-        //Id de oficina cuando se seleccionan todas
+    function cargar_estructuras($tipo, $id_balance, $id_conector, $id_oficina)
+    {
+        // Id de oficina cuando se seleccionan todas
         $oficina = "";
-
-        //Si trae oficina 
-        if ($id_oficina != "0") { $oficina = " AND balances.id_agencia = {$id_oficina} "; }
-
-        // Si tiene conector
-        if ($id_conector) { $conector = " AND estructuras.id_conector = {$id_conector}";}else{$conector = "";}
         
-        $sql =
-        "SELECT
+        // Si trae oficina
+        if ($id_oficina != "0") {
+            $oficina = " AND balances.id_agencia = {$id_oficina} ";
+        }
+        
+        // Si tiene conector
+        if ($id_conector) {
+            $conector = " AND estructuras.id_conector = {$id_conector}";
+        } else {
+            $conector = "";
+        }
+        
+        $sql = "SELECT
         *
         FROM
         estructuras
@@ -90,13 +111,13 @@ Class Balance_model extends CI_Model{
         AND balances.id_balance = {$id_balance} 
         {$oficina} 
         {$conector}";
-
+        
         return $this->db->query($sql)->result();
     }
 
-    function cargar_balances($anio){
-        $sql =
-        "SELECT
+    function cargar_balances($anio)
+    {
+        $sql = "SELECT
         balances.id_balance,
         balances.ano,
         din_agencias.strNombre,
@@ -107,13 +128,13 @@ Class Balance_model extends CI_Model{
         WHERE
         balances.ano = {$anio} AND
         balances.id_empresa = {$this->session->userdata('id_empresa')}";
-
+        
         return $this->db->query($sql)->result();
     }
 
-    function cargar_categorias($id_balance){
-        $sql =
-        "SELECT
+    function cargar_categorias($id_balance)
+    {
+        $sql = "SELECT
         *
         FROM
         balances
@@ -123,21 +144,22 @@ Class Balance_model extends CI_Model{
         estructuras.tipo = 'C' AND
         balances.id_empresa = {$this->session->userdata('id_empresa')} AND
         balances.id_balance = {$id_balance}";
-
+        
         return $this->db->query($sql)->result();
     }
 
-    function cargar_dimensiones($id_categoria){
+    function cargar_dimensiones($id_categoria)
+    {
         $this->db->select('*');
         $this->db->where('tipo', 'D');
         $this->db->where('id_conector', $id_categoria);
-
+        
         return $this->db->get('estructuras')->result();
     }
-    
-    function cargar_pesos($tipo, $id_balance, $id_conector){
-        $sql =
-        "SELECT
+
+    function cargar_pesos($tipo, $id_balance, $id_conector)
+    {
+        $sql = "SELECT
         estructuras.intCodigo,
         estructuras.strNombre,
         estructuras.descripcion,
@@ -149,30 +171,30 @@ Class Balance_model extends CI_Model{
         balances.id_balance = {$id_balance} AND
         estructuras.tipo = '{$tipo}' AND estructuras.id_conector = '{$id_conector}'
         ORDER BY estructuras.strNombre";
-
+        
         return $this->db->query($sql)->result();
     }
 
-    function cargar_variables_usuario($anio, $id_oficina, $tipo){
+    function cargar_variables_usuario($anio, $id_oficina, $tipo)
+    {
         switch ($tipo) {
             case 'C':
                 $tipo = "GROUP BY id_categoria";
                 break;
-
+            
             case null:
                 $tipo = "";
                 break;
         }
-        //Id de oficina cuando se seleccionan todas
+        // Id de oficina cuando se seleccionan todas
         $oficina = "";
-
-        //Si 
+        
+        // Si
         if ($id_oficina != "0") {
             $oficina = " AND balances.id_agencia = {$id_oficina} ";
         }
-
-        $sql =
-        "SELECT
+        
+        $sql = "SELECT
         estructuras.intCodigo AS id_variable,
         estructuras.id_conector AS conector,
         (SELECT
@@ -203,9 +225,9 @@ Class Balance_model extends CI_Model{
         return $this->db->query($sql)->result();
     }
 
-    function cargar_variables_usuario2($anio, $id_oficina, $tipo){
-        $sql =
-        "SELECT
+    function cargar_variables_usuario2($anio, $id_oficina, $tipo)
+    {
+        $sql = "SELECT
         estructuras.intCodigo AS id_variable,
         estructuras.id_conector AS id_dimension,
         (SELECT
@@ -233,18 +255,21 @@ Class Balance_model extends CI_Model{
 
     /**
      * [cargar_variable description]
-     * @param  [type] $id_variable [description]
-     * @return [type]              [description]
+     * 
+     * @param [type] $id_variable
+     *            [description]
+     * @return [type] [description]
      */
-    function cargar_variable($id_variable){
+    function cargar_variable($id_variable)
+    {
         $this->db->where('intCodigo', $id_variable);
         $this->db->select('*');
         return $this->db->get('estructuras')->row();
     }
 
-    function cargar_variable_reporte($id_variable){
-        $sql =
-        "SELECT
+    function cargar_variable_reporte($id_variable)
+    {
+        $sql = "SELECT
         estructuras.intCodigo,
         estructuras.id_conector,
         estructuras.strNombre,
@@ -261,13 +286,13 @@ Class Balance_model extends CI_Model{
         estructuras
         WHERE
         estructuras.intCodigo = {$id_variable}";
-
+        
         return $this->db->query($sql)->row();
     }
 
-    function cargar_filtros(){
-        $sql_ =
-        "SELECT
+    function cargar_filtros()
+    {
+        $sql_ = "SELECT
         filtros_creados.intCodigo,
         filtros_creados.strNombre
         FROM
@@ -276,9 +301,8 @@ Class Balance_model extends CI_Model{
         WHERE
         usuarios_sistema.id_empresa = {$this->session->userdata('id_empresa')}
         ORDER BY filtros_creados.strNombre";
-
-        $sql =
-        "SELECT
+        
+        $sql = "SELECT
             filtros_creados.intCodigo,
             filtros_creados.strNombre
         FROM
@@ -288,19 +312,21 @@ Class Balance_model extends CI_Model{
             filtros_creados.es_sistema = 1 OR
             usuarios_sistema.id_empresa = {$this->session->userdata('id_empresa')}
         ORDER BY filtros_creados.strNombre";
-
+        
         return $this->db->query($sql)->result();
     }
-    
-    function consultar($id_variable){
+
+    function consultar($id_variable)
+    {
         $this->db->where('intCodigo', $id_variable);
         $this->db->select('*');
         $resultado = $this->db->get('estructuras')->row();
-
+        
         return $resultado->id_conector;
     }
 
-    function consultar_balance($anio, $id_oficina){
+    function consultar_balance($anio, $id_oficina)
+    {
         $this->db->where('ano', $anio);
         $this->db->where('id_agencia', $id_oficina);
         $this->db->select('*');
@@ -308,9 +334,9 @@ Class Balance_model extends CI_Model{
         return $this->db->get('balances')->row();
     }
 
-    function consultar_datos_balance($id_estructura){
-        $sql =
-        "SELECT
+    function consultar_datos_balance($id_estructura)
+    {
+        $sql = "SELECT
         balances.id_balance,
         balances.ano,
         balances.id_agencia
@@ -324,11 +350,12 @@ Class Balance_model extends CI_Model{
         estructuras
         WHERE
         estructuras.intCodigo = {$id_estructura})";
-
+        
         return $this->db->query($sql)->row();
     }
 
-    function consultar_estructuras($tipo, $id_balance, $id_conector){
+    function consultar_estructuras($tipo, $id_balance, $id_conector)
+    {
         $this->db->where('id_balance', $id_balance);
         $this->db->where('id_conector', $id_conector);
         $this->db->where('tipo', $tipo);
@@ -336,9 +363,9 @@ Class Balance_model extends CI_Model{
         return $this->db->get('estructuras')->result();
     }
 
-    function consultar_balanceo($tipo, $id_balance, $id_conector){
-        $sql =
-        "SELECT
+    function consultar_balanceo($tipo, $id_balance, $id_conector)
+    {
+        $sql = "SELECT
         SUM(estructuras.peso) AS Peso
         FROM
         estructuras
@@ -348,61 +375,71 @@ Class Balance_model extends CI_Model{
         estructuras.id_conector = {$id_conector}";
         
         $resultado = $this->db->query($sql)->row();
-
+        
         return $resultado->Peso;
     }
 
-    function crear($tipo, $datos){
+    function crear($tipo, $datos)
+    {
         switch ($tipo) {
             case 'balance':
-                //Se ejecuta el modelo que guarda los datos
+                // Se ejecuta el modelo que guarda los datos
                 $guardar = $this->db->insert('balances', $datos);
                 break;
             
             default:
-                # code...
+                // code...
                 break;
-        }//suiche
-
-        //Si el registro es exitoso
-        if($guardar){
-            //Retorna verdadero
+        } // suiche
+          
+        // Si el registro es exitoso
+        if ($guardar) {
+            // Retorna verdadero
             return 'true';
         }
     }
 
-    function eliminar($tipo, $id){
+    function eliminar($tipo, $id)
+    {
         // Suiche
         switch ($tipo) {
             case 'balance':
                 // Si Se borra
-                if ($this->db->delete('balances', array('id_balance' => $id))) {
+                if ($this->db->delete('balances', array(
+                    'id_balance' => $id
+                ))) {
                     // se retorna verdadero
                     return true;
-                }else{
+                } else {
                     return 'error';
                 }
                 break;
-
+            
             case 'estructuras':
                 // Si Se borra
-                if ($this->db->delete('estructuras', array('id_balance' => $id))) {
+                if ($this->db->delete('estructuras', array(
+                    'id_balance' => $id
+                ))) {
                     // se retorna verdadero
                     return true;
                 }
                 break;
             
-           case 'categoria':
+            case 'categoria':
                 // Si Se borra
-                if ($this->db->delete('estructuras', array('intCodigo' => $id))) {
+                if ($this->db->delete('estructuras', array(
+                    'intCodigo' => $id
+                ))) {
                     // se retorna verdadero
                     return true;
                 }
                 break;
             
-           case 'variables':
+            case 'variables':
                 // Si Se borra
-                if ($this->db->delete('estructuras', array('id_conector' => $id))) {
+                if ($this->db->delete('estructuras', array(
+                    'id_conector' => $id
+                ))) {
                     // se retorna verdadero
                     return true;
                 }
@@ -410,20 +447,21 @@ Class Balance_model extends CI_Model{
         }
     }
 
-    function guardar($datos){
-        //Se ejecuta el modelo que guarda los datos
+    function guardar($datos)
+    {
+        // Se ejecuta el modelo que guarda los datos
         $guardar = $this->db->insert('estructuras', $datos);
-
-        //Si el registro es exitoso
-        if($guardar){
-            //Retorna verdadero
+        
+        // Si el registro es exitoso
+        if ($guardar) {
+            // Retorna verdadero
             return true;
         }
     }
-    
-    function listar_anios(){
-        $sql =
-        "SELECT
+
+    function listar_anios()
+    {
+        $sql = "SELECT
         id_balance,
         ano
         FROM
@@ -433,25 +471,27 @@ Class Balance_model extends CI_Model{
         balances.id_empresa = {$this->session->userdata('id_empresa')}
         GROUP BY
         balances.ano";
-
+        
         return $this->db->query($sql)->result();
     }
 
-    function metas_porcentajes(){
+    function metas_porcentajes()
+    {
         $this->db->select("*");
         $this->db->where("id_empresa", $this->session->userdata('id_empresa'));
         return $this->db->get('metas')->row();
     }
 
-    function validar($datos){
+    function validar($datos)
+    {
         $this->db->where($datos);
-
+        
         $resultado = $this->db->get('balances')->row();
-
-        //Si retorna un registro
+        
+        // Si retorna un registro
         if (count($resultado) == 1) {
             return $resultado->id_balance;
-        }else{
+        } else {
             return 'false';
         }
     }

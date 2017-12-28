@@ -1,18 +1,21 @@
 <?php
-Class Reporte_model extends CI_Model{
-	function cargar_datos_campana($id_campana, $id_usuario){
-		$usuario_oportunidad = "";
-		$usuario_comentario = "";
-		$usuario_agregado = "";
 
-		if ($id_usuario > 0) {
-			$usuario_oportunidad = "AND oportunidad_x_cliente.id_usuario_creador = {$id_usuario}";
-			$usuario_comentario = "AND cliente_comentarios.id_usuario_creador = {$id_usuario}";
-			$usuario_agregado = "AND clientes_campanas.id_usuario_creador = {$id_usuario}";
-		}
+class Reporte_model extends CI_Model
+{
 
-		$sql = 
-		"SELECT
+    function cargar_datos_campana($id_campana, $id_usuario)
+    {
+        $usuario_oportunidad = "";
+        $usuario_comentario = "";
+        $usuario_agregado = "";
+        
+        if ($id_usuario > 0) {
+            $usuario_oportunidad = "AND oportunidad_x_cliente.id_usuario_creador = {$id_usuario}";
+            $usuario_comentario = "AND cliente_comentarios.id_usuario_creador = {$id_usuario}";
+            $usuario_agregado = "AND clientes_campanas.id_usuario_creador = {$id_usuario}";
+        }
+        
+        $sql = "SELECT
 			campanas.intCodigo,
 			campanas.strNombre,
 			campanas.fecha_inicia,
@@ -63,19 +66,19 @@ Class Reporte_model extends CI_Model{
 		WHERE
 			campanas.intCodigo = {$id_campana}
 			AND campanas.id_empresa = '{$this->session->userdata('id_empresa')}'";
+        
+        return $this->db->query($sql)->row();
+    }
 
-		return $this->db->query($sql)->row();
-	}
-
-	function cargar_productos_campana($id_campana, $id_usuario){
-		$usuario_campana = "";
-
-		if ($id_usuario > 0) {
-			$usuario_campana = "AND clientes_productos.id_usuario_creador = {$id_usuario}";
-		}
-
-		$sql =
-		"SELECT
+    function cargar_productos_campana($id_campana, $id_usuario)
+    {
+        $usuario_campana = "";
+        
+        if ($id_usuario > 0) {
+            $usuario_campana = "AND clientes_productos.id_usuario_creador = {$id_usuario}";
+        }
+        
+        $sql = "SELECT
 			COUNT(clientes_productos.intCodigo) AS cantidad,
 			productos.strNombre,
 			Sum(clientes_productos.valor) AS valor,
@@ -89,13 +92,13 @@ Class Reporte_model extends CI_Model{
 			{$usuario_campana}
 		GROUP BY
 			clientes_productos.id_producto";
-		
-		return $this->db->query($sql)->result();
-	}
+        
+        return $this->db->query($sql)->result();
+    }
 
-	function cargar_productos_mes($id_producto_cliente){
-		$sql =
-		"SELECT
+    function cargar_productos_mes($id_producto_cliente)
+    {
+        $sql = "SELECT
 		clientes_productos.id_cliente,
 		clientes_productos.intCodigo,
 		productos.strNombre,
@@ -110,21 +113,21 @@ Class Reporte_model extends CI_Model{
 		FROM
 		clientes_productos
 		WHERE
-		clientes_productos.ano = '".date('Y')."' AND
-		clientes_productos.mes = '".date('m')."' AND
+		clientes_productos.ano = '" . date('Y') . "' AND
+		clientes_productos.mes = '" . date('m') . "' AND
 		clientes_productos.id_producto = productos.intCodigo) AS Veces
 		FROM
 		clientes_productos
 		INNER JOIN productos ON clientes_productos.id_producto = productos.intCodigo
 		WHERE
 		clientes_productos.intCodigo = {$id_producto_cliente}";
-		
-		return $this->db->query($sql)->row();
-	}
+        
+        return $this->db->query($sql)->row();
+    }
 
-	function oportunidad_estado($id_campana, $id_estado){
-		$sql =
-		"SELECT
+    function oportunidad_estado($id_campana, $id_estado)
+    {
+        $sql = "SELECT
 		count(oportunidad_x_cliente.id_campana) AS Cantidad,
 		sum(oportunidad_x_cliente.valor_estimado) AS Total
 		FROM
@@ -132,13 +135,13 @@ Class Reporte_model extends CI_Model{
 		WHERE
 		oportunidad_x_cliente.id_campana = {$id_campana} AND
 		oportunidad_x_cliente.id_estado_oportunidad = {$id_estado}";
+        
+        return $this->db->query($sql)->row();
+    }
 
-		return $this->db->query($sql)->row();
-	}
-
-	function oportunidad_fase($id_campana, $id_fase){
-		$sql =
-		"SELECT
+    function oportunidad_fase($id_campana, $id_fase)
+    {
+        $sql = "SELECT
 		Count(oportunidad_x_cliente.id_fase) AS Cantidad,
 		Sum(oportunidad_x_cliente.valor_estimado) AS Total
 		FROM
@@ -146,9 +149,9 @@ Class Reporte_model extends CI_Model{
 		WHERE
 		oportunidad_x_cliente.id_campana = {$id_campana} AND
 		oportunidad_x_cliente.id_fase = {$id_fase}";
-		
-		return $this->db->query($sql)->row();
-	}
+        
+        return $this->db->query($sql)->row();
+    }
 }
 /* Fin del archivo reporte_model.php */
 /* Ubicación: ./application/models/reporte_model.php */

@@ -1,19 +1,24 @@
 <?php
+
 /**
  * Modelo encargado de gestionar toda la informacion relacionada al cliente
  *
  * @author 		       John Arley Cano Salinas
  * @author 		       Oscar Humberto Morales
  */
-Class Asociado extends CI_Model{
+class Asociado extends CI_Model
+{
 
     public function __construct()
     {
         $this->load->database();
-        $this->load->model(array('import_model'));
+        $this->load->model(array(
+            'import_model'
+        ));
     }
 
-    public function add_asociados_otros_datos($asociado_value, $idEmpresa) {
+    public function add_asociados_otros_datos($asociado_value, $idEmpresa)
+    {
         $asociado = new stdClass();
         $asociado->identificacion = $asociado_value['identificacion'];
         $asociado->id_empresa = $idEmpresa;
@@ -40,9 +45,10 @@ Class Asociado extends CI_Model{
         }
     }
 
-    //TODO: no encuentro en la tabla asociados para actualizar
-    //TODO: esta informacion se puede manejar en la misma tabla asociados
-    public function add_asociados_motivo_retiro($asociado_value, $idEmpresa) {
+    // TODO: no encuentro en la tabla asociados para actualizar
+    // TODO: esta informacion se puede manejar en la misma tabla asociados
+    public function add_asociados_motivo_retiro($asociado_value, $idEmpresa)
+    {
         $asociado = new stdClass();
         $asociado->identificacion = $asociado_value['identificacion'];
         $asociado->id_empresa = $idEmpresa;
@@ -54,11 +60,10 @@ Class Asociado extends CI_Model{
         $this->db->where('id_Asociado', $asociado_value['identificacion']);
         $this->db->where('Id_Empresa', $idEmpresa);
         $this->db->update('asociados', $data);
-
-
     }
 
-    public function add_asociado_conyuge($asociado_value, $idEmpresa) {
+    public function add_asociado_conyuge($asociado_value, $idEmpresa)
+    {
         $asociado = new stdClass();
         $asociado->identificacion = $asociado_value['identificacion'];
         $asociado->Id_empresa = $idEmpresa;
@@ -73,7 +78,7 @@ Class Asociado extends CI_Model{
         $asociado->Direccion_Conyuge = $asociado_value['Direccion_Conyuge'];
         $asociado->Celular_Conyuge = $asociado_value['Celular_Conyuge'];
         $asociado->id_Genero_Conyugue = $asociado_value['id_Genero_Conyugue'];
-
+        
         if ($this->import_model->insert_row($asociado)) {
             $data = [];
             $data['NombredelConyuge'] = $asociado_value['NombredelConyuge'];
@@ -87,13 +92,14 @@ Class Asociado extends CI_Model{
             $data['id_Genero_Conyugue'] = $asociado_value['id_Genero_Conyugue'];
             $data['Identificacion_Conyuge'] = $asociado_value['Identificacion_Conyuge'];
             $data['FechaNacimiento_Conyugue'] = date('Y-m-d', strtotime($fechaNacimiento));
-            $this->db->where('id_Asociado', $idEmpresa.'-'.$asociado_value['identificacion']);
+            $this->db->where('id_Asociado', $idEmpresa . '-' . $asociado_value['identificacion']);
             $this->db->where('Id_Empresa', $idEmpresa);
             $this->db->update('asociados', $data);
         }
     }
 
-    public function add_asociado_beneficiario($asociado_value, $idEmpresa) {
+    public function add_asociado_beneficiario($asociado_value, $idEmpresa)
+    {
         $asociado = new stdClass();
         $asociado->id_Asociado = $asociado_value['id_Asociado']; // activar autoicrement este codigo no deberia ir sino el secuence.
         $asociado->Id_empresa = $idEmpresa;
@@ -104,7 +110,8 @@ Class Asociado extends CI_Model{
         return $this->import_model->insert_row($asociado);
     }
 
-    public function add_asociado_conocido($asociado_value, $idEmpresa) {
+    public function add_asociado_conocido($asociado_value, $idEmpresa)
+    {
         $asociado = new stdClass();
         $asociado->id_Asociado = $asociado_value['id_Asociado'];
         $asociado->Id_empresa = $idEmpresa;
@@ -119,8 +126,10 @@ Class Asociado extends CI_Model{
         $asociado->id_Parentesco = $asociado_value['id_Parentesco'];
         return $this->import_model->insert_row($asociado);
     }
+
     // TODO: Validar esta importacion con el campo Id_asociados.
-    public function add_asociado_hijo($asociado_value, $idEmpresa) {
+    public function add_asociado_hijo($asociado_value, $idEmpresa)
+    {
         $asociado = new stdClass();
         $asociado->id_Asociado = $asociado_value['id_Asociado'];
         $asociado->id_empresa = $idEmpresa;
@@ -136,13 +145,14 @@ Class Asociado extends CI_Model{
     }
 
     // La validacion para actualizar habil debe ser por id_empresa e identificacion
-    public function add_asociado_habil($asociado_value, $idEmpresa) {
+    public function add_asociado_habil($asociado_value, $idEmpresa)
+    {
         $this->db->select('*');
         $this->db->from('asociados_habiles');
         $this->db->where('Num_identificacion', $asociado_value['Num_identificacion']);
         $this->db->where('Ano', $asociado_value['Ano']);
         $this->db->where('Id_empresa', $idEmpresa);
-
+        
         if ($this->db->count_all_results() == 0) {
             $asociado = new stdClass();
             $asociado->Num_identificacion = $asociado_value['Num_identificacion'];
@@ -156,8 +166,8 @@ Class Asociado extends CI_Model{
         $this->db->update('asociados');
     }
 
-    public function add_asociado($asociado_value, $idEmpresa, $codigoAgencia) {
-
+    public function add_asociado($asociado_value, $idEmpresa, $codigoAgencia)
+    {
         $asociado = [];
         if (is_array($asociado_value) && $idEmpresa) {
             $asociado['id_TipodeIdentificacion'] = $asociado_value['Tipo_de_identificacion'];
@@ -185,20 +195,18 @@ Class Asociado extends CI_Model{
             $asociado['id_CabezadeFamilia'] = $asociado_value['MujerCabezaFamilia'];
             $asociado['id_Profesion'] = $asociado_value['Ocupacion'];
             $asociado['id_Industria'] = $asociado_value['Sector_Economico'];
-            $asociado['FechadeRetiro']= empty($asociado_value['Fecha_de_Retiro_(ExAsociado)']) ? '0000-00-00' : date('Y/m/d', strtotime($asociado_value['Fecha_de_Retiro_(ExAsociado)']));
-            $anoIngreso = date('Y',strtotime($asociado_value['Fecha_de_ingreso']));
-            $mesIngreso = date('m',strtotime($asociado_value['Fecha_de_ingreso']));
+            $asociado['FechadeRetiro'] = empty($asociado_value['Fecha_de_Retiro_(ExAsociado)']) ? '0000-00-00' : date('Y/m/d', strtotime($asociado_value['Fecha_de_Retiro_(ExAsociado)']));
+            $anoIngreso = date('Y', strtotime($asociado_value['Fecha_de_ingreso']));
+            $mesIngreso = date('m', strtotime($asociado_value['Fecha_de_ingreso']));
             $asociado['Ano_ing'] = $anoIngreso;
             $asociado['Mes_ing'] = $mesIngreso;
             $asociado['FechaCreacion'] = date('Y/m/d');
             $asociado['id_Empresa'] = $idEmpresa;
             $asociado['id_Oficina'] = $codigoAgencia;
-            if (!$this->import_model->get_asociado($asociado['Identificacion'], $idEmpresa)) {
+            if (! $this->import_model->get_asociado($asociado['Identificacion'], $idEmpresa)) {
                 $this->import_model->insert_row($asociado);
             }
-
         }
         return false;
     }
-
 }
