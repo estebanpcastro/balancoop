@@ -14,8 +14,8 @@
  * @category        Libraries
  * @author          Brad Stinson
  */
-class Csvimport {
-    private $handle = "";
+class csvimport {
+    public $handle = "";
     private $filepath = FALSE;
     private $column_headers = FALSE;
     private $initial_line = 0;
@@ -35,8 +35,6 @@ class Csvimport {
      */
     public function get_array($filepath=FALSE, $column_headers=FALSE, $detect_line_endings=FALSE, $initial_line=FALSE, $delimiter=FALSE)
     {
-        // Raise memory limit (for big files)
-        ini_set('memory_limit', '20M');
         $result = false;
         // File path
         if(! $filepath)
@@ -136,8 +134,9 @@ class Csvimport {
                     $new_row = $row - $this->initial_line - 1; // needed so that the returned array starts at 0 instead of 1
                     foreach($column_headers as $key => $value) // assumes there are as many columns as their are title columns
                     {
-
-                        $result[$new_row][$value] = utf8_encode(trim($data[$key]));
+                        if (array_key_exists($key, $data)) {
+                            $result[$new_row][$value] = utf8_encode(trim($data[$key]));
+                        }
                     }
                 }
 
@@ -149,6 +148,67 @@ class Csvimport {
 
         $this->_close_csv();
         return $result;
+    }
+
+    public function initialze_conection($filepath=FALSE, $column_headers=FALSE, $detect_line_endings=FALSE, $initial_line=FALSE, $delimiter=FALSE) {
+        if(! $filepath)
+        {
+            $filepath = $this->_get_filepath();
+        }
+        else
+        {
+            // If filepath provided, set it
+            $this->_set_filepath($filepath);
+        }
+        // If file doesn't exists, return false
+        if(! file_exists($filepath))
+        {
+            return FALSE;
+        }
+        // auto detect row endings
+        if(! $detect_line_endings)
+        {
+            $detect_line_endings = $this->_get_detect_line_endings();
+        }
+        else
+        {
+            // If detect_line_endings provided, set it
+            $this->_set_detect_line_endings($detect_line_endings);
+        }
+        // If true, auto detect row endings
+        if($detect_line_endings)
+        {
+            ini_set("auto_detect_line_endings", TRUE);
+        }
+        // Parse from this line on
+        if(! $initial_line)
+        {
+            $initial_line = $this->_get_initial_line();
+        }
+        else
+        {
+            $this->_set_initial_line($initial_line);
+        }
+        // Delimiter
+        if(! $delimiter)
+        {
+            $delimiter = $this->_get_delimiter();
+        }
+        else
+        {
+            // If delimiter provided, set it
+            $this->_set_delimiter($delimiter);
+        }
+        // Column headers
+        if(! $column_headers)
+        {
+            $column_headers = $this->_get_column_headers();
+        }
+        else
+        {
+            // If column headers provided, set them
+            $this->_set_column_headers($column_headers);
+        }
     }
 
     function eliminar_tildes($cadena){
@@ -287,7 +347,7 @@ class Csvimport {
      * @access  private
      * @return  string
      */
-    private function _get_delimiter()
+    public function _get_delimiter()
     {
         return $this->delimiter;
     }
@@ -356,7 +416,7 @@ class Csvimport {
      * @access  private
      * @return  mixed
      */
-    private function _get_column_headers()
+    public function _get_column_headers()
     {
         return $this->column_headers;
     }
@@ -366,9 +426,21 @@ class Csvimport {
      * @access  private
      * @return  void
      */
-    private function _get_handle()
+    public function _get_handle()
     {
         $this->handle = fopen($this->filepath, "r");
+    }
+
+    /**
+     * Opens the CSV file for parsing
+     *
+     * @access  private
+     * @return  void
+     */
+    public function get_handle()
+    {
+        $this->handle = fopen($this->filepath, "r");
+        return $this->handle;
     }
     /**
      * Closes the CSV file when complete
@@ -376,7 +448,7 @@ class Csvimport {
      * @access  private
      * @return  array
      */
-    private function _close_csv()
+    public function _close_csv()
     {
         fclose($this->handle);
     }

@@ -29,6 +29,7 @@
               productos captación</option>
             <option value="cliente_producto_social">Clientes productos
               sociales</option>
+            <option value="revalorizacion_aportes">Revalorización de aportes</option>
             <option value="asociados_habiles">Asociados hábiles</option>
             <option value="asociados_beneficiarios">Asociados
               Beneficiaros</option>
@@ -53,7 +54,7 @@
         <div class="col-lg-4 form-group">
           <select id="select_mes" class="form-control input-sm">
             <option value="1">Enero</option>
-            <option value="2">Febreo</option>
+            <option value="2">Febrero</option>
             <option value="3">Marzo</option>
             <option value="4">Abril</option>
             <option value="5">Mayo</option>
@@ -84,7 +85,7 @@
 
 <script>
 $(document).ready(function(){
-	var selected = ["productos", "cliente_producto_credito", "cliente_producto_captacion", "catalogo_cuentas"];
+	var selected = ["productos", "cliente_producto_credito", "cliente_producto_captacion", "catalogo_cuentas", "revalorizacion_aportes"];
     $("#categoria").change(function(){
     	var categoria = $('#categoria').val();
         if(selected.indexOf(categoria) >= 0) {

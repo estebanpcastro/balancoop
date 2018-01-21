@@ -52,9 +52,9 @@ class Cliente_producto extends CI_Model
                     $this->db->where('Id_Empresa', $idEmpresa);
                     $this->db->update('asociados');
                 }
-                $clienteProducto = $this->setClienteProductoFromAsociado($asociado, $clienteProducto);
+                //$clienteProducto = $this->setClienteProductoFromAsociado($asociado, $clienteProducto);
                 // Create new cliente producto.
-                $clientesCreados = $this->add_cliente_producto($clienteProducto, $clientesCreados);
+                //$clientesCreados = $this->add_cliente_producto($clienteProducto, $clientesCreados);
             }
         }
         return $clientesCreados;
@@ -77,7 +77,7 @@ class Cliente_producto extends CI_Model
         if (! empty($asociado)) {
             if (! empty($producto)) {
                 $clientesCreados = $this->create_cliente_producto_values($clientesCreados, 'credito', $asociado, $value['Saldo_de_capital'], // Valor_cuota_fija.
-$value['Tasa_de_interes_nominal_cobrada'], $producto['intCodigo'], $codigoAgencia, $idCreador, $ano, $mes, $value['Fecha_de_desembolso_inicial']);
+                $value['Tasa_de_interes_nominal_cobrada'], $producto['intCodigo'], $codigoAgencia, $idCreador, $ano, $mes, $value['Fecha_de_desembolso_inicial']);
             } else {
                 // TODO: mirara que hacer para informar.
             }
@@ -94,7 +94,7 @@ $value['Tasa_de_interes_nominal_cobrada'], $producto['intCodigo'], $codigoAgenci
         } else {
             return FALSE;
         }
-        
+
         if (array_key_exists('NombreDeposito', $value)) {
             $producto = $this->import_model->get_productoId('captacion', $idEmpresa, $value['NombreDeposito']);
         }
@@ -122,6 +122,25 @@ $value['Tasa_de_interes_nominal_cobrada'], $producto['intCodigo'], $codigoAgenci
                 $fecha = $clienteProducto['ano'] . '/' . $clienteProducto['mes'] . '/' . $clienteProducto['dia'];
                 $clientesCreados = $this->create_cliente_producto_values($clientesCreados, 'social', $asociado, $clienteProducto['transferencia'], 0, // Interes.
 $producto['intCodigo'], $codigoAgencia, $idUsuario, $clienteProducto['ano'], $clienteProducto['mes'], $fecha, $clienteProducto['valor']);
+            } else {
+                // TODO: mirara que hacer para informar.
+            }
+        } else {
+            // TODO: mirar que hacer para notificar al cliente.
+        }
+        return $clientesCreados;
+    }
+
+    public function add_cliente_producto_revalorizacion($clientesCreados, $clienteProducto, $idEmpresa, $codigoAgencia, $idUsuario, $año)
+    {
+        if (! array_key_exists('id_cliente', $clienteProducto)) {
+            return FALSE;
+        }
+        $asociado = $this->import_model->get_asociado($clienteProducto['id_cliente'], $idEmpresa);
+        $producto = $this->import_model->get_productoId('social', $idEmpresa, '', $clienteProducto['id_producto']);
+        if (! empty($asociado)) {
+            if (! empty($producto)) {
+                $clientesCreados = $this->create_cliente_producto_values($clientesCreados, 'social', $asociado, $clienteProducto['revalorizacion'], 0, $producto['intCodigo'], $codigoAgencia, $idUsuario, $año, 5);
             } else {
                 // TODO: mirara que hacer para informar.
             }
@@ -168,9 +187,10 @@ $producto['intCodigo'], $codigoAgencia, $idUsuario, $clienteProducto['ano'], $cl
         $clienteProducto->transferencia = $saldo;
         $clienteProducto->valor = $valor;
         $fecha = str_replace('/', '-', $fechaUltima);
-        $fecha = empty($fechaUltima) ? date('Y-m-d', strtotime($ano . '-' . $mes . '-31')) : date('Y-m-d', strtotime($fecha));
+        $fecha = empty($fechaUltima) ? date('Y-m-d', strtotime($ano . '-' . $mes . '-30')) : date('Y-m-d', strtotime($fecha));
+        $fechaFinal = date('Y-m-d', strtotime($ano . '-12-31'));
         $clienteProducto->fecha_inicial = $fecha;
-        $clienteProducto->fecha_final = $fecha;
+        $clienteProducto->fecha_final = $fechaFinal;
         $clienteProducto->id_agencia = $codigoAgencia;
         $clienteProducto->ano = empty($ano) ? date('Y', strtotime($fecha)) : $ano;
         $clienteProducto->mes = empty($mes) ? date('m', strtotime($fecha)) : $mes;

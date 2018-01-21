@@ -188,7 +188,7 @@ class Import_model extends CI_Model
         $usuario = new stdClass();
         $usuario->identificacion = $idEmpresa . '-' . $clave_value['Identificacion'];
         $usuario->Id_empresa = $idEmpresa;
-        $usuario->clave_transferencia = sha1($idEmpresa . '-' . $clave_value['Identificacion']);
+        $usuario->clave_transferencia = sha1($clave_value['Clave_tranferencia']);
         $this->insert_row($usuario);
         $data = [
             'Clave_Transferencia' => $usuario->clave_transferencia,
