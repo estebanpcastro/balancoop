@@ -6,7 +6,7 @@ if ( ! defined('BASEPATH')) exit('Lo sentimos, usted no tiene acceso a esta ruta
 
 /**
  * Transferencia solidaria
- * 
+ *
  * @author 		       John Arley Cano Salinas
  * @author 		       Oscar Humberto Morales
  */
@@ -20,7 +20,7 @@ Class Transferencia extends CI_Controller{
             redirect('inicio/cerrar_sesion');
         }//Fin if
         */
-        
+
         //Carga de modelos
         $this->load->model(array('transferencia_model'));
     }
@@ -48,6 +48,8 @@ Class Transferencia extends CI_Controller{
 
         // Si lo encuentra
         if (count($busqueda) != 0) {
+            $sesion = array("es_asociado_login" => '1');
+            $this->session->set_userdata($sesion);
             print json_encode($busqueda);
         }else{
             echo "false";
@@ -88,7 +90,7 @@ Class Transferencia extends CI_Controller{
                     //Devuelve vacío
                     print json_encode(array("Total_Compras" => 0));
                 }
-                break; 
+                break;
 
             // Si son las compras del año actual
             case 'ultimos_meses':
@@ -106,7 +108,7 @@ Class Transferencia extends CI_Controller{
                 break;
         }
 
-        
+
     }
 }
 /* Fin del archivo transferencia.php */

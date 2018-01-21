@@ -78,7 +78,7 @@ class Asociado extends CI_Model
         $asociado->Direccion_Conyuge = $asociado_value['Direccion_Conyuge'];
         $asociado->Celular_Conyuge = $asociado_value['Celular_Conyuge'];
         $asociado->id_Genero_Conyugue = $asociado_value['id_Genero_Conyugue'];
-        
+
         if ($this->import_model->insert_row($asociado)) {
             $data = [];
             $data['NombredelConyuge'] = $asociado_value['NombredelConyuge'];
@@ -152,7 +152,7 @@ class Asociado extends CI_Model
         $this->db->where('Num_identificacion', $asociado_value['Num_identificacion']);
         $this->db->where('Ano', $asociado_value['Ano']);
         $this->db->where('Id_empresa', $idEmpresa);
-        
+
         if ($this->db->count_all_results() == 0) {
             $asociado = new stdClass();
             $asociado->Num_identificacion = $asociado_value['Num_identificacion'];
@@ -176,7 +176,9 @@ class Asociado extends CI_Model
             $asociado['PrimerApellido'] = $asociado_value['Primer_apellido'];
             $asociado['SegundoApellido'] = $asociado_value['Segundo_apellido'];
             $asociado['Nombre'] = $asociado_value['Nombres'];
-            $asociado['FechadeIngresoalaCooperativa'] = date('Y/m/d', strtotime($asociado_value['Fecha_de_ingreso']));
+            $fecha = explode("/", $asociado_value['Fecha_de_ingreso']);
+            $FechadeIngresoalaCooperativa = $fecha[2] . '/' . $fecha[1] . '/' . $fecha[0];
+            $asociado['FechadeIngresoalaCooperativa'] = date('Y/m/d', strtotime($FechadeIngresoalaCooperativa));
             $asociado['TelefonoCasa'] = $asociado_value['Telefono'];
             $asociado['Direccion'] = $asociado_value['Direccion'];
             $asociado['Id_tipo'] = $asociado_value['Asociado'];
@@ -189,7 +191,9 @@ class Asociado extends CI_Model
             $asociado['id_Escolaridad'] = $asociado_value['NivelEscolaridad'];
             $asociado['Id_Estrato'] = $asociado_value['Estrato'];
             $asociado['id_RangodeIngresomensual'] = $asociado_value['NivelIngresos'];
-            $asociado['FechaNacimiento'] = date('Y/m/d', strtotime($asociado_value['FechaNacimiento']));
+            $fecha = (!empty($asociado_value['FechaNacimiento'])) ? explode("/", $asociado_value['FechaNacimiento']) : '';
+            $fechaNacimiento = (!empty($fecha)) ? $fecha[2] . '/' . $fecha[1] . '/' . $fecha[0] : '0000-00-00';
+            $asociado['FechaNacimiento'] = date('Y/m/d', strtotime($fechaNacimiento));
             $asociado['Edad_Cliente'] = $this->import_model->get_edad($asociado_value['FechaNacimiento']);
             $asociado['id_EstadoCivil'] = $asociado_value['EstadoCivil'];
             $asociado['id_CabezadeFamilia'] = $asociado_value['MujerCabezaFamilia'];

@@ -3,7 +3,7 @@
 if ($this->uri->segment(6) == "get") {
 	//Cuando la transferencia se genera desde afuera, los datos se toman por get
 	// echo "Vienen por GET<br>";
-	
+
 	$anio = date("Y") -1 ;
 	$id_empresa = $this->uri->segment(3);
 	$id_oficina = $this->uri->segment(4);
@@ -14,7 +14,7 @@ if ($this->uri->segment(6) == "get") {
 if($this->input->post('metodo') == 'post') {
 	//Cuando es generada desde el usuario logueado o desde dentro, es por POST
 	// echo "Vienen por POST<br>";
-	
+
 	$anio = $this->input->post('anio');
 	$id_empresa = $this->input->post('id_empresa');
 	$id_oficina = $this->input->post('id_oficina');
@@ -64,7 +64,7 @@ $transferencias = $this->transferencia_model->transferencias_mensuales($id_empre
 	<?php }else{ ?>
 		<p>No se encontró el asociado</p>
 	<?php } ?>
-	<p>Utiliza nuestros servicios y recibe una mayor transferencia solidaria. Somos una Cooperativa con alto beneficio social.<br> Accede a los siguientes enlaces y conoce todo lo que podemos hacer por tí.</p>
+	<p>Utiliza nuestros servicios y recibe una mayor transferencia solidaria. Somos una entidad con alto beneficio social.<br> Accede a los siguientes enlaces y conoce todo lo que podemos hacer por tí.</p>
 </div><!-- Nombre del asociado -->
 
 <!-- Resumen general -->
@@ -75,10 +75,10 @@ $transferencias = $this->transferencia_model->transferencias_mensuales($id_empre
 				<th class="text-center">Categorías</th>
 				<th class="text-center">Líneas</th>
 				<th class="text-center">Asociados</th>
-				<th class="text-center">Total Transferencia solidaria como cooperativa a sus asociados</th>
-				<th class="text-center">Promedio de transferencia solidaria como cooperativa a sus asociados</th>
+				<th class="text-center">Total Transferencia solidaria como entidad a sus asociados</th>
+				<th class="text-center">Promedio de transferencia solidaria como entidad a sus asociados</th>
 				<th class="text-center">Su transferencia</th>
-				<th class="text-center">Su transferencia solidaria comparada con el promedio de la cooperativa</th>
+				<th class="text-center">Su transferencia solidaria comparada con el promedio de la entidad</th>
 			</thead>
 
 			<tbody>
@@ -88,7 +88,7 @@ $transferencias = $this->transferencia_model->transferencias_mensuales($id_empre
 				$total_promedio_transferencia_asociado = 0	;
 				$acumulado_transferencia_asociado = 0	;
 				$acumulado_comparacion = 0	;
-				
+
 				// Se recorren las categorías
 				foreach ($this->listas_model->cargar_productos_categorias($id_empresa) as $categoria) {
 					// Cantidad de asociados
@@ -113,13 +113,13 @@ $transferencias = $this->transferencia_model->transferencias_mensuales($id_empre
 
 					// Diferencia en transferencia
 					$comparacion_transferencia = $transferencia_asociado - $promedio_transferencia;
-					
+
 					// COndición para poner los valores negativos en cero
 					$valor_comparacion = ($comparacion_transferencia < 0) ? 0 : $comparacion_transferencia ;
 					$valor_comparacion_acumulado = (!$acumulado_comparacion) ? 0 : $acumulado_comparacion ;
 
 					$acumulado_comparacion = $acumulado_comparacion + $valor_comparacion;
-					
+
 					// // Color de la comparación
 					// $color_comparacion = ($comparacion_transferencia < 0) ? "text-danger" : "" ;
 
@@ -138,7 +138,7 @@ $transferencias = $this->transferencia_model->transferencias_mensuales($id_empre
 
 				// $color_acumulado_comparacion = ($acumulado_comparacion < 0) ? "text-danger" : "" ;
 				?>
-					
+
 				<tr style="font-size: 0.9em">
 					<td></td>
 					<td></td>
@@ -233,7 +233,7 @@ $transferencias = $this->transferencia_model->transferencias_mensuales($id_empre
 				$total_transferencias += $transferencia->Transferencias;
 			}
 			?>
-			
+
 			<!-- <tr>
 				<td></td>
 				<td></td>

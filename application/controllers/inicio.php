@@ -192,6 +192,7 @@ Class Inicio extends CI_Controller{
                     "tipo" => $datos_sesion->id_tipo_usuario,
                     "Actualizacion" => '0',
                     "codigo_agencia" => $codigo_agencia ? $codigo_agencia : 0,
+                    "es_asociado_login" => '0'
                 );
 
                 //Se cargan los datos a la sesión
